@@ -1,6 +1,6 @@
 from objspace import *
 
-applicationfile = StdObjSpace.applicationfile(__name__)
+applicationfile = StdObjSpace.AppFile(__name__)
 
 """
 The implementation of integers is a bit difficult,
@@ -62,7 +62,7 @@ def int_repr(space, w_int1):
     res = "%ld" % a
     return space.wrap(a)
 
-def int_compare(space, w_int1, w_int2):
+def int_int_cmp(space, w_int1, w_int2):
     i = w_int1.intval
     j = w_int2.intval
     if i < j:
@@ -73,7 +73,7 @@ def int_compare(space, w_int1, w_int2):
         ret = 0
     return W_IntObject(ret)
 
-StdObjSpace.compare.register(int_int_compare, W_IntObject, W_IntObject)
+StdObjSpace.cmp.register(int_int_cmp, W_IntObject, W_IntObject)
 
 def int_hash(w_int1):
     #/* XXX If this is changed, you also need to change the way
@@ -83,7 +83,7 @@ def int_hash(w_int1):
         x = -2
     return W_IntObject(x)
 
-StdObjSpace.hash.register(int_int_hash, W_IntObject, W_IntObject)
+StdObjSpace.hash.register(int_hash, W_IntObject, W_IntObject)
 
 def int_int_add(space, w_int1, w_int2):
     x = w_int1.intval
