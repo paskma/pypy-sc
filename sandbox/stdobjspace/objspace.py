@@ -84,6 +84,13 @@ class FailedToImplement(Exception):
 
 class StdObjectSpace:
 
+    type    = MultiMethod(1, 'type')
+    getiter = MultiMethod(1, 'iter')
+    repr    = MultiMethod(1, 'repr')
+    getattr = MultiMethod(2, 'getattr')
+    setattr = MultiMethod(3, 'setattr')
+    pow  = MultiMethod(3, '**')
+    
     add = MultiMethod(2, '+')
     sub = MultiMethod(2, '-')
 

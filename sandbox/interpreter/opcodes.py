@@ -11,19 +11,19 @@ class unaryoperation:
         self.operationname = operationname
     def __call__(self, f):
         operation = getattr(f.space, self.operationname)
-        v = f.valuestack.pop()
-        x = operation(v)
-        f.valuestack.push(x)
+        w_1 = f.valuestack.pop()
+        w_result = operation(w_1)
+        f.valuestack.push(w_result)
 
 class binaryoperation:
     def __init__(self, operationname):
         self.operationname = operationname
     def __call__(self, f):
         operation = getattr(f.space, self.operationname)
-        w = f.valuestack.pop()
-        v = f.valuestack.pop()
-        x = operation(v, w)
-        f.valuestack.push(x)
+        w_2 = f.valuestack.pop()
+        w_1 = f.valuestack.pop()
+        w_result = operation(w_1, w_2)
+        f.valuestack.push(w_result)
 
 
 ################################################################
@@ -90,7 +90,12 @@ UNARY_NOT      = unaryoperation("not_")
 UNARY_CONVERT  = unaryoperation("repr")
 UNARY_INVERT   = unaryoperation("invert")
 
-BINARY_POWER    = binaryoperation("pow")
+def BINARY_POWER(f):
+    w_2 = f.valuestack.pop()
+    w_1 = f.valuestack.pop()
+    w_result = f.space.pow(w_1, w_2, f.space.w_None)
+    f.valuestack.push(w_result)
+
 BINARY_MULTIPLY = binaryoperation("mul")
 BINARY_TRUE_DIVIDE  = binaryoperation("truediv")
 BINARY_FLOOR_DIVIDE = binaryoperation("floordiv")
@@ -105,7 +110,12 @@ BINARY_AND = binaryoperation("and_")
 BINARY_XOR = binaryoperation("xor")
 BINARY_OR  = binaryoperation("or_")
 
-INPLACE_POWER    = binaryoperation("inplace_pow")
+def INPLACE_POWER(f):
+    w_2 = f.valuestack.pop()
+    w_1 = f.valuestack.pop()
+    w_result = f.space.inplace_pow(w_1, w_2, f.space.w_None)
+    f.valuestack.push(w_result)
+
 INPLACE_MULTIPLY = binaryoperation("inplace_mul")
 INPLACE_TRUE_DIVIDE  = binaryoperation("inplace_truediv")
 INPLACE_FLOOR_DIVIDE = binaryoperation("inplace_floordiv")
