@@ -18,11 +18,11 @@ class OperationError(Exception):
     def nicetraceback(self, space):
         "Dump a nice custom traceback to sys.stderr."
         import sys, traceback
-        traceback = sys.exc_info()[2]
+        tb = sys.exc_info()[2]
         exc = space.unwrap(self.w_type)
         value = space.unwrap(self.w_value)
         print >> sys.stderr, "*"*10, " OperationError ", "*"*10
-        traceback.print_tb(traceback)
+        traceback.print_tb(tb)
 ##         if self.w_traceback:
 ##             traceback.print_tb(space.unwrap(self.w_traceback))
         msg = traceback.format_exception_only(exc, value)
