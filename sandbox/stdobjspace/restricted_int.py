@@ -32,12 +32,14 @@ class r_int(int):
         # ensure long shift, so we don't depend on
         # shift truncation (2.3) vs. long(2.4)
         x = long(self)
-        return r_int(x << n)
+        y = int(n)
+        return r_int(x << y)
     __rlshift__ = __lshift__
 
     def __rshift__(self, n):
         x = int(self)
-        return r_int(x >> n)
+        y = int(n)
+        return r_int(x >> y)
     __rrshift__ = __rshift__
 
     def __or__(self, other):

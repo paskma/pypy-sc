@@ -23,8 +23,6 @@ import sys
 LONG_BIT = 32   # XXX put this elsewhere and make it machine dependant
                 # by some auto configure
 
-WARN_SHIFT = type(1 << LONG_BIT) == int
-
 IS_RESTRICTED = type(sys.maxint*2) is int
 
 if not IS_RESTRICTED:
@@ -39,6 +37,10 @@ class W_IntObject:
             w_self.intval = intval
         else:
             w_self.intval = r_int(intval)
+
+    def __repr__(w_self):
+        """ representation for debugging purposes """
+        return "%s(%d)" % (w_self.__class__.__name__, w_self.intval)
 
     def getattr(w_self, space, w_attrname):
         #w_class = space.wrap("__class__")
@@ -143,17 +145,9 @@ def int_int_floordiv(space, w_int1, w_int2):
 StdObjSpace.floordiv.register(int_int_floordiv, W_IntObject, W_IntObject)
 
 def int_int_truediv(space, w_int1, w_int2):
-    x = w_int1.intval
-    y = w_int2.intval
-    try:
-        z = x / y   # XXX make sure this is the new true division
-    except ZeroDivisionError:
-        raise OperationError(space.w_ZeroDivisionError,
-                             space.wrap("integer division by zero"))
-    except OverflowError:
-        raise FailedToImplement(space.w_OverflowError,
-                                space.wrap("integer division"))
-    return W_IntObject(z)
+    # cannot implement, since it gives floats
+    raise FailedToImplement(space.w_OverflowError,
+                            space.wrap("integer division"))
 
 StdObjSpace.truediv.register(int_int_truediv, W_IntObject, W_IntObject)
 
@@ -199,60 +193,45 @@ StdObjSpace.div.register(int_int_div, W_IntObject, W_IntObject)
 
 # helper for pow()
 
-def _impl_int_int_pow(iv, iw, iz=None):
+def _impl_int_int_pow(space, iv, iw, iz=None):
     if iw < 0:
         if iz is not None:
             raise OperationError(space.w_TypeError,
                              space.wrap("pow() 2nd argument "
                  "cannot be negative when 3rd argument specified"))
-        #/* Return a float.  This works because we know that
-        #   this calls float_pow() which converts its
-        #   arguments to double. */
-        ## actually bounce it
+        ## bounce it, since it always returns float
         raise FailedToImplement(space.w_ValueError,
                                 space.wrap("integer exponentiation"))
     if iz is not None:
         if iz == 0:
-            raise FailedToImplement(space.w_ValueError,
+            raise OperationError(space.w_ValueError,
                                     space.wrap("pow() 3rd argument cannot be 0"))
     temp = iv
     ix = 1
-    while iw > 0:
-        if iw & 1:
-            try:
+    try:
+        while iw > 0:
+            if iw & 1:
                 ix = ix*temp
-            except OverflowError:
-                raise FailedToImplement(space.w_OverflowError,
-                                        space.wrap("integer exponentiation"))
-        iw >>= 1   #/* Shift exponent down by 1 bit */
-        if iw==0:
-            break
-        try:
+            iw >>= 1   #/* Shift exponent down by 1 bit */
+            if iw==0:
+                break
             temp *= temp   #/* Square the value of temp */
-        except OverflowError:
-            raise FailedToImplement(space.w_OverflowError,
-                                    space.wrap("integer exponentiation"))
-        if iz:
-            #/* If we did a multiplication, perform a modulo */
-            try:
+            if iz:
+                #/* If we did a multiplication, perform a modulo */
                 ix = ix % iz;
                 temp = temp % iz;
-            except OverflowError:
-                raise FailedToImplement(space.w_OverflowError,
-                                        space.wrap("integer exponentiation"))
-    if iz:
-        try:
+        if iz:
             ix = ix % iz
-        except OverflowError:
-            raise FailedToImplement(space.w_OverflowError,
-                                    space.wrap("integer exponentiation"))
+    except OverflowError:
+        raise FailedToImplement(space.w_OverflowError,
+                                space.wrap("integer exponentiation"))
     return ix
 
 def int_int_int_pow(space, w_int1, w_int2, w_int3):
     x = w_int1.intval
     y = w_int2.intval
     z = w_int3.intval
-    ret = _impl_int_int_pow(x, y, z)
+    ret = _impl_int_int_pow(space, x, y, z)
     return W_IntObject(ret)
 
 StdObjSpace.pow.register(int_int_int_pow, W_IntObject, W_IntObject, W_IntObject)
@@ -260,7 +239,7 @@ StdObjSpace.pow.register(int_int_int_pow, W_IntObject, W_IntObject, W_IntObject)
 def int_int_none_pow(space, w_int1, w_int2, w_none=None):
     x = w_int1.intval
     y = w_int2.intval
-    ret = _impl_int_int_pow(x, y)
+    ret = _impl_int_int_pow(space, x, y)
     return W_IntObject(ret)
 
 StdObjSpace.pow.register(int_int_none_pow, W_IntObject, W_IntObject, W_NoneObject)
@@ -343,14 +322,14 @@ def int_int_rshift(space, w_int1, w_int2):
         raise OperationError(space.w_ValueError,
                              space.wrap("negative shift count"))
     if a == 0 or b == 0:
-        return int_pos(v)
+        return int_pos(w_int1)
     if b >= LONG_BIT:
         if a < 0:
             a = -1
         else:
             a = 0
     else:
-        ## look into pyport.h, who >> should be implemented!
+        ## please look into pyport.h, how >> should be implemented!
         ## a = Py_ARITHMETIC_RIGHT_SHIFT(long, a, b);
         a = a >> b
     return W_IntObject(a)
@@ -401,7 +380,8 @@ StdObjSpace.int.register(int_int, W_IntObject)
 
 def int_long(space, w_int1):
     a = w_int1.intval
-    return space.newlong(a)
+    x = long(a)  ## XXX should this really be done so?
+    return space.newlong(x)
 
 StdObjSpace.long.register(int_long, W_IntObject)
 

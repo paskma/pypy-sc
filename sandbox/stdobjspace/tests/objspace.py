@@ -3,6 +3,9 @@ import new
 class FailedToImplement(Exception):
     pass
 
+class OperationError(Exception):
+    pass
+
 class FakeRegister:
     def register(self,*argl,**argv):
         pass
@@ -18,9 +21,6 @@ class W_NoneObject:pass
 class WrapClass:
     def __init__(self,value):
         self.value = value
-
-    def value(self):
-        return value
 
 class ObjSpace:
     add = FakeRegister()
@@ -57,6 +57,7 @@ class ObjSpace:
     float = FakeRegister()
 
     w_TypeError = "w_TypeError"
+    w_ValueError = "w_ValueError"
     w_OverflowError = "w_OverflowError"
     w_ZeroDivisionError = "w_ZeroDivisionError"
 
@@ -78,11 +79,14 @@ class ObjSpace:
         ret = CallWrapper(thismod)
         return ret
 
-    def newtuple(self,tuplelist):
-        return tuple(tuplelist)
+    def newtuple(self, tuplelist):
+        return self.wrap(tuple(tuplelist))
 
-    def newdouble(self,thisdouble):
-        return thisdouble
+    def newdouble(self, thisdouble):
+        return self.wrap(thisdouble)
+
+    def newlong(self, thislong):
+        return self.wrap(thislong)
 
 StdObjSpace = ObjSpace()
 
