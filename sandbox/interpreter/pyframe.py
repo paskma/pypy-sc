@@ -42,6 +42,8 @@ class PyFrame:
                             opcodes.dispatch_noarg(self, opcode)
 
                     except OperationError, e:
+                        import traceback
+                        print traceback.print_exc()
                         # convert an OperationError into a reason to unroll
                         # the stack
                         w_exc_class, w_exc_value = e.args

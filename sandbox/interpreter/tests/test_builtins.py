@@ -4,6 +4,10 @@ sys.path.insert(0, '..')
 from pyframe import PyFrame
 import trivialspace
 
+def make_builtins_global():
+        d = {}
+        exec '''def filter(a, b): return 42''' in d 
+        return d
 
 class TestBuiltins(unittest.TestCase):
 
@@ -11,7 +15,8 @@ class TestBuiltins(unittest.TestCase):
         # build frame
         space = trivialspace
         bytecode = compile("def f(x): return filter(None, [1, '', 2])", '', 'exec').co_consts[0]
-        w_globals = space.wrap({'__builtins__': __builtins__})
+        d = make_builtins_global()
+        w_globals = space.wrap(d)
         w_locals = space.wrap({})
         frame = PyFrame(space, bytecode, w_globals, w_locals)
 
