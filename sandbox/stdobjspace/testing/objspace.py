@@ -37,6 +37,7 @@ class ObjSpace:
 
     w_TypeError = "w_TypeError"
     w_OverflowError = "w_OverflowError"
+    w_ZeroDivisionError = "w_ZeroDivisionError"
 
     def wrap(self,item):
         return item
@@ -47,7 +48,10 @@ class ObjSpace:
     def applicationfile(self,name):
         thisglobals = {}
         thislocals = {}
-        execfile(name+'-app.py',thisglobals,thislocals)
+        try:
+            execfile(name+'-app.py',thisglobals,thislocals)
+        except IOError:
+            execfile(name+'.app.py',thisglobals,thislocals)
         ret = CallWrapper(thislocals)
         return ret
 
