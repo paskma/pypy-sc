@@ -1,3 +1,4 @@
+from pypy.objspace.std.objspace import *
 
 
 class W_CPythonObject:
@@ -12,3 +13,8 @@ class W_CPythonObject:
         """ representation for debugging purposes """
         return "wrap(%r)" % (w_self.cpyobj,)
 
+
+def cpython_unwrap(space, w_obj):
+    return w_obj.cpyobj
+
+StdObjSpace.unwrap.register(cpython_unwrap, W_CPythonObject)

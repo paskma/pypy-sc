@@ -44,7 +44,8 @@ class StdObjSpace(ObjSpace):
             wrappeditems = [self.wrap(item) for item in x]
             import tupleobject
             return tupleobject.W_TupleObject(wrappeditems)
-        raise TypeError, "don't know how to wrap instances of %s" % type(x)
+        import cpythonobject
+        return cpythonobject.W_CPythonObject(x)
 
     def newtuple(self, list_w):
         import tupleobject

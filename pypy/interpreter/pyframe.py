@@ -3,6 +3,12 @@
 
 import opcode
 import baseobjspace
+from appfile import AppFile
+
+appfile = AppFile(__name__, ["interpreter"])
+
+CO_VARARGS     = 0x0004
+CO_VARKEYWORDS = 0x0008
 
 
 class PyFrame:
@@ -94,24 +100,46 @@ class PyFrame:
 
     ### frame initialization ###
 
-    def setargs(self, w_arguments, w_kwargs=None):
-        # initialize the frame with the given arguments tuple.
-        # The simple case cannot be done at the application-level (.app.py)
-        # for bootstrapping reasons.
-        # XXX incomplete!  All the not-so-simple cases are missing.
-        #     See PyEval_EvalCodeEx().
-        # XXX handle w_kwargs
-        arguments = unpackiterable(self.space, w_arguments)
-        if len(arguments) != self.bytecode.co_argcount:
-            message = "(this is an error message that needs to be fixed)"
-            w_exceptionclass = self.space.w_TypeError
-            w_exceptionvalue = self.space.wrap(message)
-            raise baseobjspace.OperationError(w_exceptionclass, w_exceptionvalue)
+    def setargs(self, w_arguments, w_kwargs=None,
+                w_defaults=None, w_closure=None):
+        "Initialize the frame with the given arguments tuple."
+        arguments = self.decode_arguments(w_arguments, w_kwargs,
+                                          w_defaults, w_closure)
         for i in range(len(arguments)):
             varname = self.getlocalvarname(i)
             w_varname = self.space.wrap(varname)
             w_arg = self.space.wrap(arguments[i])
             self.space.setitem(self.w_locals, w_varname, w_arg)
+
+    def decode_arguments(self, w_arguments, w_kwargs, w_defaults, w_closure):
+        # We cannot systematically go to the application-level (_app.py)
+        # to do this dirty work, for bootstrapping reasons.  So we check
+        # if we are in the most simple case and if so do not go to the
+        # application-level at all.
+        co = self.bytecode
+        if (co.co_flags & (CO_VARARGS|CO_VARKEYWORDS) == 0 and
+            (w_defaults is None or not self.space.is_true(w_defaults)) and
+            (w_kwargs   is None or not self.space.is_true(w_kwargs))   and
+            (w_closure  is None or not self.space.is_true(w_closure))):
+            # looks like a simple case, see if we got exactly the correct
+            # number of arguments
+            try:
+                args = self.space.unpackiterable(w_arguments, co.co_argcount)
+            except ValueError:
+                pass  # no
+            else:
+                return args   # yes! fine!
+        # non-trivial case.  I won't do it myself.
+        if w_kwargs   is None: w_kwargs   = self.space.newdict([])
+        if w_defaults is None: w_defaults = self.space.newtuple([])
+        if w_closure  is None: w_closure  = self.space.newtuple([])
+        w_bytecode = self.space.wrap(co)
+        w_arguments = self.space.gethelper(appfile).call(
+            "decode_frame_arguments", [w_arguments, w_kwargs, w_defaults,
+                                       w_closure, w_bytecode])
+        # we assume that decode_frame_arguments() gives us a tuple
+        # of the correct length.
+        return self.space.unpackiterable(w_arguments)
 
     def load_builtins(self):
         # initialize self.w_builtins.  This cannot be done in the '.app.py'
@@ -241,7 +269,12 @@ class SApplicationException(StackUnroller):
             frame.valuestack.push(w_exc_value)
             frame.valuestack.push(w_exc_type)
             frame.next_instr = block.handlerposition   # jump to the handler
+            
+            # XXX
+            # XXX this is broken because we don't always reach the END_FINALLY
+            # XXX
             frame.blockstack.push(NoExceptionInFinally())
+            
             raise StopUnrolling
 
     def emptystack(self, frame):
@@ -325,16 +358,3 @@ class Stack:
 
     def empty(self):
         return not self.items
-
-def unpackiterable(space, w_iterable):
-    """Utility function unpacking any finite-length iterable object into a
-    real (interpreter-level) list."""
-    w_iterator = space.getiter(w_iterable)
-    items = []
-    while True:
-        try:
-            w_item = space.iternext(w_iterator)
-        except baseobjspace.NoValue:
-            break  # done
-        items.append(w_item)
-    return items

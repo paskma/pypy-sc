@@ -4,8 +4,10 @@ __all__ = ['ObjSpace', 'OperationError', 'NoValue']
 class OperationError(Exception):
     """Interpreter-level exception that signals an exception that should be
     sent to the application level.
-    
-    Arguments are the object-space exception class and value."""
+
+    OperationError instances have three public attributes (and no .args),
+    w_type, w_value and w_traceback, which contain the wrapped type, value
+    and traceback describing the exception."""
 
     def __init__(self, w_type, w_value, w_traceback=None):
         self.w_type = w_type
@@ -76,6 +78,31 @@ class ObjSpace:
             helper = AppHelper(self, applicationfile.bytecode)
             self.appfile_helpers[applicationfile] = helper
         return helper
+
+    # Following is a friendly interface to common object space operations
+    # that can be defined in term of more primitive ones
+
+    def unpackiterable(self, w_iterable, expected_length=None):
+        """Unpack an iterable object into a real (interpreter-level) list.
+        Raise a real ValueError if the length is wrong."""
+        w_iterator = self.getiter(w_iterable)
+        items = []
+        while True:
+            try:
+                w_item = self.iternext(w_iterator)
+            except NoValue:
+                break  # done
+            if expected_length is not None and len(items) == expected_length:
+                raise ValueError, "too many values to unpack"
+            items.append(w_item)
+        if expected_length is not None and len(items) < expected_length:
+            i = len(items)
+            if i == 1:
+                plural = ""
+            else:
+                plural = "s"
+            raise ValueError, "need more than %d value%s to unpack" % (i, plural)
+        return items
 
 
 ## Table describing the regular part of the interface of object spaces,

@@ -257,8 +257,7 @@ def RAISE_VARARGS(f, nbargs):
             "prepare_raise", [w_type, w_value, w_traceback])
     else:
         raise pyframe.BytecodeCorruption, "bad RAISE_VARARGS oparg"
-    w_type, w_value, w_traceback = pyframe.unpackiterable(
-        f.space, w_resulttuple)
+    w_type, w_value, w_traceback = f.space.unpackiterable(w_resulttuple)
     raise OperationError(w_type, w_value, w_traceback)
 
 def LOAD_LOCALS(f):
@@ -316,30 +315,10 @@ def DELETE_NAME(f, varindex):
 
 def UNPACK_SEQUENCE(f, itemcount):
     w_iterable = f.valuestack.pop()
-    w_iterator = f.space.getiter(w_iterable)
-    items = []
-    for i in range(itemcount):
-        try:
-            w_item = f.space.iternext(w_iterator)
-        except NoValue:
-            if i == 1:
-                plural = ""
-            else:
-                plural = "s"
-            message = "need more than %d value%s to unpack" % (i, plural)
-            w_exceptionclass = f.space.w_ValueError
-            w_exceptionvalue = f.space.wrap(message)
-            raise OperationError(w_exceptionclass, w_exceptionvalue)
-        items.append(w_item)
-    # check that we have exhausted the iterator now.
     try:
-        f.space.iternext(w_iterator)
-    except NoValue:
-        pass
-    else:
-        w_exceptionclass = f.space.w_ValueError
-        w_exceptionclass = f.space.wrap("too many values to unpack")
-        raise OperationError(w_exceptionclass, w_exceptionvalue)
+        items = f.space.unpackiterable(w_iterable, itemcount)
+    except ValueError, e:
+        raise OperationError(f.space.w_ValueError, f.space.wrap(str(e)))
     items.reverse()
     for item in items:
         f.valuestack.push(item)
