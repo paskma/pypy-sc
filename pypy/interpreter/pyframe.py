@@ -26,6 +26,7 @@ class PyFrame:
         self.valuestack = Stack()
         self.blockstack = Stack()
         self.next_instr = 0
+        self.lasti = -1
 
     def eval(self, executioncontext):
         "Interpreter main loop!"
@@ -33,6 +34,7 @@ class PyFrame:
             while True:
                 try:
                     try:
+                        self.lasti = self.next_instr
                         # fetch and dispatch the next opcode
                         op = self.nextop()
                         if opcode.has_arg(op):
@@ -50,7 +52,7 @@ class PyFrame:
                         else:
                             w_traceback = e.w_traceback
 
-                        w_traceback.append(self)
+                        w_traceback.append((self, self.lasti))
                         raise SApplicationException(
                             e.w_type, e.w_value, w_traceback)
                     # XXX some other exceptions could be caught here too,
@@ -235,7 +237,6 @@ class SApplicationException(StackUnroller):
             # push the exception to the value stack for inspection by the
             # exception handler (the code after the except:)
             w_exc_type, w_exc_value, w_exc_traceback = self.args
-            # XXX trackback?
             frame.valuestack.push(w_exc_traceback)
             frame.valuestack.push(w_exc_value)
             frame.valuestack.push(w_exc_type)
