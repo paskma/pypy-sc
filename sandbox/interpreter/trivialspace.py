@@ -11,8 +11,14 @@ class TrivialSpace(objectspace.ObjectSpace):
 
     def __init__(self):
         objectspace.ObjectSpace.__init__(self)
-        import __builtin__
+        import __builtin__, types
         self.w_builtins.update(__builtin__.__dict__)
+        for n, c in self.w_builtins.iteritems():
+            if isinstance(c, types.ClassType) and issubclass(c, Exception):
+                setattr(self, 'w_' + c.__name__, c)
+        self.w_None = None
+        self.w_True = True
+        self.w_False = False
 
     # general stuff
     def wrap(self, x):
