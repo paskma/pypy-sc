@@ -20,6 +20,14 @@ class ExecutionContext:
 def getexecutioncontext():
     return dynamic_get('__executioncontext__')
 
+
 # Private hack
 def dynamic_get(longvarname):
-    ...
+    import sys
+    f = sys._getframe()
+    while f:
+        if f.f_locals.has_key(var):
+            return f.f_locals[var]
+        f = f.f_back
+    raise NameError, "or something"
+            
