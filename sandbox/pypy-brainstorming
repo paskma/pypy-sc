@@ -75,7 +75,8 @@ assert f(p, a) == c(p)(a) == r
       define the frame structure
 
     * define a object/type model that maps into python data structures
-      wrap cpython objects into the new object model so we can continue to use cpython modules
+      wrap cpython objects into the new object model so we can continue
+      to use cpython modules
     
     * rewrite c python modules and the builtin object library in python
       optimzation for a potential global python optimizer, until that
