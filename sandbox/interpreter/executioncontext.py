@@ -12,6 +12,7 @@ class ExecutionContext:
             result = frame.eval()
         finally:
             self.framestack.pop()
+        return result
 
 
 # Public
