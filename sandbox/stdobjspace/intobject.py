@@ -232,59 +232,75 @@ def int_invert(w_int1):
 
 StdObjSpace.invert.register(int_invert, W_IntObject)
 
-def int_int_lshift(w_int1, w_int2):
-static PyObject *
-int_lshift(PyIntObject *v, PyIntObject *w)
-{
-    long a, b, c;
-    CONVERT_TO_LONG(v, a);
-    CONVERT_TO_LONG(w, b);
-    if (b < 0) {
-        PyErr_SetString(PyExc_ValueError, "negative shift count");
-        return NULL;
-    }
-    if (a == 0 || b == 0)
-        return int_pos(v);
-    if (b >= LONG_BIT) {
-        if (PyErr_Warn(PyExc_FutureWarning,
-                   "x<<y losing bits or changing sign "
-                   "will return a long in Python 2.4 and up") < 0)
-            return NULL;
-        return PyInt_FromLong(0L);
-    }
-    c = a << b;
-    if (a != Py_ARITHMETIC_RIGHT_SHIFT(long, c, b)) {
-        if (PyErr_Warn(PyExc_FutureWarning,
-                   "x<<y losing bits or changing sign "
-                   "will return a long in Python 2.4 and up") < 0)
-            return NULL;
-    }
-    return PyInt_FromLong(c);
-}
+# belongs to pyconfig.h
+LONG_BIT = 32  # XXX put this elsewhere and make it machine dependant
 
-static PyObject *
-int_rshift(PyIntObject *v, PyIntObject *w)
-{
-    register long a, b;
-    CONVERT_TO_LONG(v, a);
-    CONVERT_TO_LONG(w, b);
+WARN_SHIFT = type(1 << LONG_BIT) == int
+
+# helper for warning
+# it either does nothing since warning must be implemented,
+# 
+
+def _warn_or_raise_lshift():
+    if WARN_SHIFT:
+        pass  # dunno how to warn
+        #if (PyErr_Warn(PyExc_FutureWarning,
+        #           "x<<y losing bits or changing sign "
+        #           "will return a long in Python 2.4 and up") < 0)
+    else:
+        # we want to coerce to long
+        raise FailedToImplement(space.w_OverflowError,
+                                space.wrap("integer left shift"))
+        
+def int_int_lshift(w_int1, w_int2):
+    a = w_int1.intval
+    b = w_int2.intval
+    if b < 0:
+        raise OperationError(space.w_ValueError,
+                             space.wrap("negative shift count"))
+    if a == 0 or b == 0:
+        return int_pos(w_int1)
+    if b >= LONG_BIT:
+        _warn_or_raise_lshift()
+        return W_IntObject(0)
+    ##
+    ## XXX please! have a look into pyport.h and see how to implement
+    ## the overflow checking, using macro Py_ARITHMETIC_RIGHT_SHIFT
+    ## we *assume* that the overflow checking is done correctly
+    ## in the code generator, which is not trivial!
+    try:
+        c = a << b
+        ## the test in C code is
+        ## if (a != Py_ARITHMETIC_RIGHT_SHIFT(long, c, b)) {
+        ##     if (PyErr_Warn(PyExc_FutureWarning,
+        # and so on
+    except OverflowError:
+        _warn_or_raise_lshift()
+        return W_IntObject(0)
+    return W_IntObject(c);
+
+StdObjSpace.lshift.register(int_int_lshift, W_IntObject, W_IntObject)
+
+def int_int_rshift(w_int1, w_int2):
+    a = w_int1.intval
+    b = w_int2.intval
     if (b < 0) {
-        PyErr_SetString(PyExc_ValueError, "negative shift count");
-        return NULL;
-    }
-    if (a == 0 || b == 0)
-        return int_pos(v);
-    if (b >= LONG_BIT) {
-        if (a < 0)
-            a = -1;
-        else
-            a = 0;
-    }
-    else {
-        a = Py_ARITHMETIC_RIGHT_SHIFT(long, a, b);
-    }
-    return PyInt_FromLong(a);
-}
+        raise OperationError(space.w_ValueError,
+                             space.wrap("negative shift count"))
+    if a == 0 or b == 0:
+        return int_pos(v)
+    if b >= LONG_BIT:
+        if a < 0:
+            a = -1
+        else:
+            a = 0
+    else:
+        ## look into pyport.h, who >> should be implemented!
+        ## a = Py_ARITHMETIC_RIGHT_SHIFT(long, a, b);
+        a = a >> b
+    return W_IntObject(a)
+
+StdObjSpace.lshift.register(int_int_rshift, W_IntObject, W_IntObject)
 
 static PyObject *
 int_and(PyIntObject *v, PyIntObject *w)
