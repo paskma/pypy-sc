@@ -17,6 +17,7 @@ class MultiMethod(object):
         self.dispatch_table = {}
 
     def register(self, function, *types):
+        # W_ANY can be used as a placeholder to dispatch on any value.
         if types in self.dispatch_table:
             raise error, "we already got an implementation for %r %r" % (
                 self.operatorsymbol, types)
@@ -31,27 +32,32 @@ class MultiMethod(object):
         """Build a list of all possible combinations of delegated types,
         sorted by cost."""
         result = []
-        self.internal_buildchoices(types, (), (), result)
+        self.internal_buildchoices(types, (), (), (), result)
         result.sort()
-        return result
+        return [(delegators, function) for costs, delegators, function in result]
 
-    def internal_buildchoices(self, initialtypes,
-                              currenttypes, currentdelegators, result):
+    def internal_buildchoices(self, initialtypes, currenttypes,
+                              currentcosts, currentdelegators, result):
         if len(currenttypes) == self.arity:
             try:
                 function = self.dispatch_table[currenttypes]
             except KeyError:
                 pass
             else:
-                result.append((currentdelegators, function))
+                result.append((currentcosts, currentdelegators, function))
         else:
             nexttype = initialtypes[len(currenttypes)]
             self.internal_buildchoices(initialtypes, currenttypes + (nexttype,),
+                                       currentcosts + (0,),
+                                       currentdelegators + (None,), result)
+            self.internal_buildchoices(initialtypes, currenttypes + (W_ANY,),
+                                       currentcosts + (1,),
                                        currentdelegators + (None,), result)
             delegators = getattr(nexttype, "delegate_once", {})
             for othertype, delegator in delegators.items():
                 self.internal_buildchoices(initialtypes,
                                            currenttypes + (othertype,),
+                                           currentcosts + (2,),
                                            currentdelegators + (delegator,),
                                            result)
 
