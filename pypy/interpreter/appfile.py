@@ -30,7 +30,7 @@ class AppFile:
         f = open(filename, 'r')
         src = f.read()
         f.close()
-        self.bytecode = compile(src, modulename, 'exec')
+        self.bytecode = compile(src, filename, 'exec')
 
 
 class Namespace:
