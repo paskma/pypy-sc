@@ -1,3 +1,5 @@
+from pypy.objspace.std.objspace import *
+
 
 class W_TupleObject(object):
     def __init__(self, items):
