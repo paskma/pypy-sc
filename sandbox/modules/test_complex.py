@@ -113,14 +113,44 @@ for x0 in xrange(-3, 3):
 
                 mc = z0c*z1c
                 mp = z0p*z1p
+                assert equal(mc, mp)
+
                 sc = z0c+z1c
                 sp = z0p+z1p
+                assert equal(sc, sp)
+
                 dc = z0c-z1c
                 dp = z0p-z1p
-                assert equal(mc, mp)
-                assert equal(sc, sp)
                 assert equal(dc, dp)
 
+                if not equal(z1c, complex(0,0)): 
+                    try:
+                        qc = z0c/z1c
+                        qp = z0p/z1p
+                        assert equal(qc, qp)
+                    except AssertionError:
+                        print "c: (%s/%s) = (%s)" % (z0c, z1c, qc)
+                        print "py:(%s/%s) = (%s)" % (z0p, z1p, qp)
+ 
+                if not equal(z1c, complex(0,0)): 
+                    try:
+                        ddc, mmc = divmod(z0c, z1c)
+                        ddp, mmp = divmod(z0p, z1p)
+                        assert equal(ddc, ddp)
+                        assert equal(mmc, mmp)
+                    except AssertionError:
+                        print "c: divmod(%s,%s) = (%s,%s)" % (z0c, z1c, ddc,mmc)
+                        print "py:divmod(%s,%s) = (%s,%s)" % (z0p, z1p, ddp,mmp)
+
+                if not equal(z1c, complex(0,0)): 
+                    try:
+                        rc = z0c%z1c
+                        rp = z0p%z1p
+                        assert equal(rc, rp)
+                    except AssertionError:
+                        print "c: %s%%%s = %s" % (z0c, z1c, rc)
+                        print "py:%s%%%s = %s" % (z0p, z1p, rp)
+                    
                 if not equal(z0c, 0j) and (z1c.imag != 0.0):
                      pc = z0c**z1c
                      pp = z0p**z1p

@@ -2,12 +2,11 @@ import re
 import errno
 import math
 import types
+import warnings
 
 
 PREC_REPR = 0 # 17
 PREC_STR = 0 # 12
-
-c_1 = complex(1., 0.)
 
 
 class complex(object):
@@ -23,21 +22,25 @@ class complex(object):
         if type(imag) == types.StringType:
             msg = "complex() second arg can't be a string"
             raise TypeError, msg
+
         if type(real) in (types.StringType, types.UnicodeType):
-            pat = re.compile(" *([\+\-]?\d*\.?\d*)([\+\-]?\d*\.?\d*)[jJ] *")
-            m = pat.match(real)
-            x, y = m.groups()
-            if len(y) == 1 and y in '+-':
-                y = y + '1.0'
-            x, y = map(float, [x, y])
-            self.real = x
-            self.imag = y
+            self.real, self.imag = self._makeComplexFromString(real)
         else:
             if imag is None:
                imag = 0.
             self.real = float(real)
             self.imag = float(imag)
         
+
+    def _makeComplexFromString(self, string):
+        pat = re.compile(" *([\+\-]?\d*\.?\d*)([\+\-]?\d*\.?\d*)[jJ] *")
+        m = pat.match(string)
+        x, y = m.groups()
+        if len(y) == 1 and y in '+-':
+            y = y + '1.0'
+        x, y = map(float, [x, y])
+        return x, y
+
 
     def __description(self, precision):
         sign = '+'
@@ -62,12 +65,7 @@ class complex(object):
         
     def __hash__(self):
         hashreal = hash(self.real)
-        if hashreal == -1:
-            return -1
-
         hashimag = hash(self.imag)
-        if hashimag == -1:
-            return -1
 
         # Note:  if the imaginary part is 0, hashimag is 0 now,
         # so the following returns hashreal unchanged.  This is
@@ -83,22 +81,29 @@ class complex(object):
 
 
     def __add__(self, other):
-        return complex(self.real+other.real, self.imag+other.imag)
+        real = self.real + other.real
+        imag = self.imag + other.imag
+        return complex(real, imag)
 
 
     def __sub__(self, other):
-        return complex(self.real-other.real, self.imag-other.imag)
+        real = self.real - other.real
+        imag = self.imag - other.imag
+        return complex(real, imag)
 
 
     def __mul__(self, other):
-        z = complex()
-        z.real = self.real*other.real - self.imag*other.imag
-        z.imag = self.real*other.imag + self.imag*other.real
-        return z
+        if other.__class__ != complex:
+            return complex(other*self.real, other*self.imag)
+
+        real = self.real*other.real - self.imag*other.imag
+        imag = self.real*other.imag + self.imag*other.real
+        return complex(real, imag)
 
 
     def __div__(self, other):
-        r = complex()
+        if other.__class__ != complex:
+            return complex(self.real/other, self.imag/other)
 
         if other.real < 0:
             abs_breal = -other.real
@@ -114,21 +119,21 @@ class complex(object):
             # divide tops and bottom by other.real
             if abs_breal == 0.0:
                 errnum = errno.EDOM
-                r.real = r.imag = 0.0
+                real = imag = 0.0
             else:
                 ratio = other.imag / other.real
                 denom = other.real + other.imag * ratio
-                r.real = (self.real + self.imag * ratio) / denom
-                r.imag = (self.imag - self.real * ratio) / denom
+                real = (self.real + self.imag * ratio) / denom
+                imag = (self.imag - self.real * ratio) / denom
         else:
             # divide tops and bottom by other.imag
             ratio = other.real / other.imag
             denom = other.real * ratio + other.imag
             assert other.imag != 0.0
-            r.real = (self.real * ratio + self.imag) / denom
-            r.imag = (self.imag * ratio - self.real) / denom
+            real = (self.real * ratio + self.imag) / denom
+            imag = (self.imag * ratio - self.real) / denom
 
-        return r
+        return complex(real, imag)
 
 
     def __mod__(self, other):
@@ -139,9 +144,12 @@ class complex(object):
 
         div.real = math.floor(div.real) # Use the floor of the real part.
         div.imag = 0.0
-        mod = self - other*div
+        mod = self - div*other
 
-        return complex(mod)
+        if mod.__class__ == complex:
+            return mod
+        else:
+            return complex(mod)
 
 
     def __divmod__(self, other):
@@ -149,34 +157,31 @@ class complex(object):
 
         errnum = 0
         div = self/other #  The raw divisor value
-        if errnum == EDOM:
+        if errnum == errno.EDOM:
             raise ZeroDivisionError, "complex divmod()"
 
-        div.real = floor(div.real) # Use the floor of the real part.
-        div.imag = 0.0
-        mod = self - other*div
-        d = complex(div)
-        m = complex(mod)
+        div = complex(math.floor(div.real), 0.0)
+        mod = self - div*other
+        d = div # complex(div)
+        m = mod # complex(mod)
 
         return d, m
 
 
     def __pow__(self, other):
-
         if other.__class__ != complex:
             other = complex(other, 0)
                     
         a, b = self, other
-        r = complex()
 
         if b.real == 0. and b.imag == 0.:
-            r.real = 1.
-            r.imag = 0.
+            real = 1.
+            imag = 0.
         elif a.real == 0. and a.imag == 0.:
             if b.imag != 0. or b.real < 0.:
                 errnum = errno.EDOM
-            r.real = 0.
-            r.imag = 0.
+            real = 0.
+            imag = 0.
         else:
             vabs = math.hypot(a.real,a.imag)
             len = math.pow(vabs,b.real)
@@ -185,10 +190,10 @@ class complex(object):
             if b.imag != 0.0:
                 len /= math.exp(at*b.imag)
                 phase += b.imag*math.log(vabs)
-            r.real = len*math.cos(phase)
-            r.imag = len*math.sin(phase)
+            real = len*math.cos(phase)
+            imag = len*math.sin(phase)
 
-        return r
+        return complex(real, imag)
 
 
     def __neg__(self):
@@ -209,16 +214,18 @@ class complex(object):
 
 
     def __coerce__(self, other):
-        if type(other) is types.IntType:
+        typ = type(other)
+        
+        if typ is types.IntType:
             return self, complex(float(other))
-        elif type(other) is types.LongType:
+        elif typ is types.LongType:
             return self, complex(float(other))
-        elif type(other) is types.FloatType:
+        elif typ is types.FloatType:
             return self, complex(other)
         elif other.__class__ == complex:
             return self, other
 
-        # return 1 # Can't do it
+        raise TypeError, "number coercion failed"
 
 
     def __int__(self):
@@ -253,8 +260,24 @@ class complex(object):
         raise TypeError, "cannot compare complex numbers using <, <=, >, >="
 
 
+    def __ne__(self, other):
+        if self.real != other.real:
+            return 1
+        if self.imag != other.imag:
+            return 1
+        return 0            
 
-        
+
+#    def __new__(self, ...):
+#        pass
+
+#    def __floordiv__(self, value):
+#        pass
+
+
+# test mod, coerce, divmod
+
+
 # complex_subtype_from_c_complex
 # PyComplex_FromCComplex
 # complex_subtype_from_doubles
