@@ -109,13 +109,15 @@ def newfunction(code, globals, defaultarguments, closure=None):
 def apply(callable, args, kwds):
     if isinstance(callable, types.FunctionType):
         import trivialspace as space
+        import executioncontext
         bytecode = callable.func_code
         w_globals = space.wrap(callable.func_globals)
         w_locals = space.newdict([])
         frame = pyframe.PyFrame(space, bytecode, w_globals, w_locals)
         # perform call
         frame.setargs(args, kwds)
-        return frame.eval()
+        ec = executioncontext.getexecutioncontext()
+        return ec.eval_frame(frame)
     else:
         return __builtins__.apply(callable, args, kwds)
 
