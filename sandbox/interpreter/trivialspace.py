@@ -122,7 +122,7 @@ def %(_name)s(self, *args):
         if isinstance(callable, types.FunctionType):
             bytecode = callable.func_code
             ec = self.getexecutioncontext()
-            w_globals = ec.make_standard_w_globals()
+            w_globals = self.wrap(callable.func_globals)
             w_locals = self.newdict([])
             frame = pyframe.PyFrame(self, bytecode, w_globals, w_locals)
             # perform call
