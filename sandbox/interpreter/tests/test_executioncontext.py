@@ -2,16 +2,16 @@ import unittest, sys, os
 sys.path.insert(0, '..')
 
 from pyframe import PyFrame
-import trivialspace
+import trivialspace, executioncontext
 
 
 class TestExecutionContext(unittest.TestCase):
 
     def test_trivial1(self):
         # build frame
-        space = TrivialSpace()
+        space = trivialspace.TrivialSpace()
 
-        ec = ExecutionContext(space)
+        ec = executioncontext.ExecutionContext(space)
 
         space.initialize(ec)
         
