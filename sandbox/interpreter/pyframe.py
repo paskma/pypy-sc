@@ -97,8 +97,7 @@ class PyFrame:
         arguments = unpackiterable(self.space, w_arguments)
         if len(arguments) != self.bytecode.co_argcount:
             message = "(this is an error message that needs to be fixed)"
-            w_exceptionclass = opcodes.applicationfile.findobject(self.space,
-                                                                  "TypeError")
+            w_exceptionclass = self.space.w_TypeError
             w_exceptionvalue = self.space.wrap(message)
             raise objectspace.OperationError(w_exceptionclass, w_exceptionvalue)
         for i in range(len(arguments)):
