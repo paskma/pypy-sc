@@ -16,11 +16,12 @@ import types
 import unittest
 
 try:
+    import setpath
+    from appspace import cmathmodule
+    from appspace.complexobject import complex as pycomplex
+except ImportError:
     import cmathmodule
     from complexobject import complex as pycomplex
-except ImportError:
-    from pypy.appspace import cmathmodule
-    from pypy.appspace.complexobject import complex as pycomplex
 
 from test_complexobject import equal, enumerate
 

@@ -19,10 +19,10 @@ import unittest
 
 
 try:
-    from complexobject import complex as pycomplex
-except ImportError:
     import setpath
-    from pypy.appspace.complexobject import complex as pycomplex
+    from appspace.complexobject import complex as pycomplex
+except ImportError:
+    from complexobject import complex as pycomplex
 
 
 try:
