@@ -224,22 +224,31 @@ def CONTINUE_LOOP(f, startofloop):
     raise pyframe.SContinueLoop(startofloop)
 
 def RAISE_VARARGS(f, nbargs):
+    # we use the .app.py file to prepare the exception/value/traceback
+    # but not to actually raise it, because we cannot use the 'raise'
+    # statement to implement RAISE_VARARGS
     if nbargs == 0:
-        applicationfile.call(f.space, "raise0")
+        w_resulttuple = applicationfile.call(f.space, "prepare_raise0")
     elif nbargs == 1:
         w_exc = f.valuestack.pop()
-        applicationfile.call(f.space, "raise1", [w_exc])
+        w_resulttuple = applicationfile.call(f.space, "prepare_raise1", [w_exc])
     elif nbargs == 2:
-        w_exc   = f.valuestack.pop()
         w_value = f.valuestack.pop()
-        applicationfile.call(f.space, "raise2", [w_exc, w_value])
+        w_exc   = f.valuestack.pop()
+        w_resulttuple = applicationfile.call(f.space, "prepare_raise2",
+                                             [w_exc, w_value])
     elif nbargs == 3:
-        w_exc       = f.valuestack.pop()
-        w_value     = f.valuestack.pop()
         w_traceback = f.valuestack.pop()
-        applicationfile.call(f.space, "raise3", [w_exc, w_value, w_traceback])
+        w_value     = f.valuestack.pop()
+        w_exc       = f.valuestack.pop()
+        w_resulttuple = applicationfile.call(f.space, "prepare_raise3",
+                                             [w_exc, w_value, w_traceback])
     else:
-        raise pyframe.BytecodeCorruption
+        raise pyframe.BytecodeCorruption, "bad RAISE_VARARGS oparg"
+    w_exception, w_value, w_traceback = pyframe.unpackiterable(f.space,
+                                                               w_resulttuple)
+    # XXX use the traceback too!
+    raise OperationError(w_exception, w_value)
 
 def LOAD_LOCALS(f):
     f.valuestack.push(f.w_locals)
