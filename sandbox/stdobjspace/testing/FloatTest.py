@@ -14,7 +14,7 @@ os.chdir('..')
 # import yourmodule
 #######################################
 
-import floatobject
+import floatobject as fl
 
 True,False = (1==1),(1==0)
 
@@ -27,17 +27,17 @@ class floatTest(unittest.TestCase):
         pass
 
     def addTest(self):
-        f1 = floatobject.W_FloatObject(1.0)
-        f2 = floatobject.W_FloatObject(2.0)
-        result = floatobject.float_float_add(self.space,f1,f2)
+        f1 = fl.W_FloatObject(1.0)
+        f2 = fl.W_FloatObject(2.0)
+        result = fl.float_float_add(self.space,f1,f2)
         assert result.floatval == 3.0
 
     def divmodTest(self):
         x = 1.0
         y = 2.0
-        f1 = floatobject.W_FloatObject(x)
-        f2 = floatobject.W_FloatObject(y)
-        v,w = floatobject.float_float_divmod(self.space,f1,f2)
+        f1 = fl.W_FloatObject(x)
+        f2 = fl.W_FloatObject(y)
+        v,w = fl.float_float_divmod(self.space,f1,f2)
         assert (v,w) == divmod(x,y)
 
 

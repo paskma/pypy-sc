@@ -36,6 +36,13 @@ class ObjSpace:
     oct = FakeRegister()
     hex = FakeRegister()
     ord = FakeRegister()
+    float = FakeRegister()
+    repr = FakeRegister()
+    str = FakeRegister()
+    cmp = FakeRegister()
+    hash = FakeRegister()
+    divmod = FakeRegister()
+
 
     w_TypeError = "w_TypeError"
     w_OverflowError = "w_OverflowError"

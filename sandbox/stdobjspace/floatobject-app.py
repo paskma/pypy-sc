@@ -1,10 +1,7 @@
-import math
-
-def float_getattr(thisfloat,attr):
-    return getattr(thisfloat,attr)
+from math import *
 
 def float_fmod(v,w):
-    return v % w
+    return fmod(v,w)
 
 def float_floor(v):
-    return math.floor(v)
+    return floor(v)
