@@ -22,7 +22,7 @@ def print_expr(x):
 def file_softspace(file, newflag):
     softspace = getattr(file, "softspace", False)
     try:
-        stream.softspace = newflag
+        file.softspace = newflag
     except AttributeError:
         pass
     return softspace
@@ -59,7 +59,7 @@ def import_name(builtins, modulename, globals, locals, fromlist):
         import_ = builtins["__import__"]
     except KeyError:
         raise ImportError, "__import__ not found"
-    import_(modulename, globals, locals, fromlist)
+    return import_(modulename, globals, locals, fromlist)
 
 def import_all_from(module, locals):
     try:
