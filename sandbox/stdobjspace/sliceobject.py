@@ -6,8 +6,8 @@ class W_SliceObject(object):
         self.w_start = w_start
         self.w_stop = w_stop
         self.w_step = w_step
-    def indices(self, space, w_length):
-        length = space.int_as_long(w_length)
+    def indices(w_self, space, w_length):
+        length = space.int.as_long(w_length)
         
         if self.w_step == space.w_None:
             step = 1
@@ -44,7 +44,7 @@ class W_SliceObject(object):
                     else:
                         start = length
 
-        if isinstane(self.w_stop, space.W_NoneObject):
+        if isinstance(self.w_stop, space.W_NoneObject):
             stop = defstop
         else:
             stop = space.eval_slice_index(self.w_stop)
@@ -55,5 +55,7 @@ class W_SliceObject(object):
             elif stop > length:
                 stop = length
 
-        return start, stop, step
+        return space.newtuple([space.W_IntObject(start),
+                               space.W_IntObject(stop),
+                               space.W_IntObject(step)])
                 
