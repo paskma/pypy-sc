@@ -33,6 +33,9 @@ class ObjSpace:
     and_ = FakeRegister()
     xor = FakeRegister()
     or_ = FakeRegister()
+    oct = FakeRegister()
+    hex = FakeRegister()
+    ord = FakeRegister()
 
     w_TypeError = "w_TypeError"
     w_OverflowError = "w_OverflowError"
