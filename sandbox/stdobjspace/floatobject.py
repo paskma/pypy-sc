@@ -79,6 +79,47 @@ def float_float_div(space, w_float1, w_float2):
 def float_float_rem(space, w_float1, w_float2):
     x = w_float1.floatval
     y = w_float2.floatval
+    if y == 0.0:
+        raise FailedToImplement(space.w_ZeroDivisionError, space.wrap("float modulo"))
+    try:
+        # this is a hack!!!! must be replaced by a real fmod function
+        mod = applicationfile.call(space, "float_fmod", [x,y])
+        if (mod and ((y < 0.0) != (mod < 0.0))):
+            mod += y
+    except FloatingPointError:
+        raise FailedToImplement(space.w_FloatingPointError, space.wrap("float division"))
+
+    return W_FloatObject(mod)
+
+def float_float_divmod(space, w_float1, w_float2):
+    x = w_float1.floatval
+    y = w_float2.floatval
+    if y == 0.0:
+        raise FailedToImplement(space.w_ZeroDivisionError, space.wrap("float modulo"))
+    try:
+        # this is a hack!!!! must be replaced by a real fmod function
+        mod = applicationfile.call(space, "float_fmod", [x,y])
+        div = (x -mod) / y
+        if (mod):
+            if ((y < 0.0) != (mod < 0.0)):
+                mod += y
+                div -= -1.0
+        else:
+            mod *= mod
+            if y < 0.0:
+                mod = -mod
+        if div:
+            floordiv = applicationfile.call(space, "float_floor", [div])
+            if (div - floordiv > 0.5):
+                floordiv += 1.0
+        else:
+            div *= div;
+            floordiv = div * x / y
+    except FloatingPointError:
+        raise FailedToImplement(space.w_FloatingPointError, space.wrap("float division"))
+
+    return space.newtuple([floordiv,mod])
+
 def float_float_pow(space, w_float1,w_float2,thirdArg=None):
     if thirdArg is not None:
         raise FailedToImplement(space.w_TypeError,space.wrap("pow() 3rd argument not allowed unless all arguments are integers"))

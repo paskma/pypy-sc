@@ -32,10 +32,19 @@ class floatTest(unittest.TestCase):
         result = floatobject.float_float_add(self.space,f1,f2)
         assert result.floatval == 3.0
 
+    def divmodTest(self):
+        x = 1.0
+        y = 2.0
+        f1 = floatobject.W_FloatObject(x)
+        f2 = floatobject.W_FloatObject(y)
+        v,w = floatobject.float_float_divmod(self.space,f1,f2)
+        assert (v,w) == divmod(x,y)
+
 
 def makeTestSuite():
     suiteAtomic = unittest.TestSuite()
     suiteAtomic.addTest(floatTest('addTest'))
+    suiteAtomic.addTest(floatTest('divmodTest'))
 
     return unittest.TestSuite((suiteAtomic,))
 
