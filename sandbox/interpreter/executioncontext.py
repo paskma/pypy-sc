@@ -3,9 +3,8 @@ import sys
 
 class ExecutionContext:
 
-    def __init__(self, space, w_builtins):
+    def __init__(self, space):
         self.space = space
-        self.w_builtins = w_builtins
         self.framestack = []
 
     def eval_frame(self, frame):
