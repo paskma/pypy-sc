@@ -44,34 +44,34 @@ def print_newline():
 
 #CHECK
 def import_name(builtins, modulename, globals, locals, fromlist):
-	try:
-		import_ = builtins["__import__"]
-	except KeyError:
-		raise ImportError, "__import__ not found"
+    try:
+	import_ = builtins["__import__"]
+    except KeyError:
+	raise ImportError, "__import__ not found"
     import_(modulname, globals, locals, fromlist)
 	
 #CHECK
 def import_all_from(module, locals):
+    try:
+	all=module.__all__ 
+    except AttributeError:
 	try:
-		all=module.__all__ 
+	    dict=module.__dict__
+	    all=dict.keys()
+	    skip_leading_underscores = True
 	except AttributeError:
-		try:
-			dict=module.__dict__
-			all=???PyMapping_Keys(dict)
-			skip_leading_underscores = True
-		except AttributeError:
-			raise ImportError, "from-import-* object has no __dict__ and no __all__"
-	for name in all:
-		if skip_leading_underscores and name[0]=='_':
-			continue
+	    raise ImportError, "from-import-* object has no __dict__ and no __all__"
+    for name in all:
+	if skip_leading_underscores and name[0]=='_':
+	    continue
 		locals[name]=module.__getattr(name)
 		
 #CHECK
 def import_from(module, name):
-	try:
-		return module.name
-	except AttributeError:
-		raise ImportError, "cannot import name '%s'" % name
+    try:
+	return module.name
+    except AttributeError:
+	raise ImportError, "cannot import name '%s'" % name
 		
 def load_name(name, locals, globals, builtins):
     try:
