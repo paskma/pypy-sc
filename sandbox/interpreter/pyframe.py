@@ -1,8 +1,8 @@
 """ PyFrame class implementation with the interpreter main loop.
 """
 
-import pypy, opcodes
-from pypy import OperationError
+import opcodes
+import objectspace
 
 
 class PyFrame:
@@ -41,7 +41,7 @@ class PyFrame:
                         else:
                             opcodes.dispatch_noarg(self, opcode)
 
-                    except OperationError, e:
+                    except objectspace.OperationError, e:
                         import traceback
                         print traceback.print_exc()
                         # convert an OperationError into a reason to unroll
@@ -100,7 +100,7 @@ class PyFrame:
             w_exceptionclass = opcodes.applicationfile.findobject(self.space,
                                                                   "TypeError")
             w_exceptionvalue = self.space.wrap(message)
-            raise OperationError(w_exceptionclass, w_exceptionvalue)
+            raise objectspace.OperationError(w_exceptionclass, w_exceptionvalue)
         for i in range(len(arguments)):
             varname = self.getlocalvarname(i)
             w_varname = self.space.wrap(varname)
@@ -119,7 +119,7 @@ class PyFrame:
         w_attrname = self.space.wrap("__dict__")
         try:
             w_builtins = self.space.getattr(w_builtins, w_attrname)
-        except OperationError, e:
+        except objectspace.OperationError, e:
             pass # catch and ignore any error
         self.w_builtins = w_builtins
 
@@ -216,7 +216,7 @@ class SApplicationException(StackUnroller):
         # propagate the exception to the caller
         w_exc_class, w_exc_value = self.args
         # XXX traceback?
-        raise OperationError(w_exc_class, w_exc_value)
+        raise objectspace.OperationError(w_exc_class, w_exc_value)
 
 class SBreakLoop(StackUnroller):
     """Signals a 'break' statement."""
@@ -297,7 +297,7 @@ def unpackiterable(space, w_iterable):
     while True:
         try:
             w_item = space.iternext(w_iterator)
-        except pypy.NoValue:
+        except objectspace.NoValue:
             break  # done
         items.append(w_item)
     return items

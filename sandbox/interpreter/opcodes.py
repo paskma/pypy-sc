@@ -1,5 +1,5 @@
 import dis, pyframe, objectspace
-from pypy import OperationError
+from objectspace import OperationError
 
 
 # dynamically loaded application-space utilities
@@ -322,7 +322,7 @@ def UNPACK_SEQUENCE(f, itemcount):
     for i in range(itemcount):
         try:
             w_item = f.space.iternext(w_iterator)
-        except pypy.NoValue:
+        except objectspace.NoValue:
             if i == 1:
                 plural = ""
             else:
@@ -335,7 +335,7 @@ def UNPACK_SEQUENCE(f, itemcount):
     # check that we have exhausted the iterator now.
     try:
         f.space.iternext(w_iterator)
-    except pypy.NoValue:
+    except objectspace.NoValue:
         pass
     else:
         w_exceptionclass = f.space.w_ValueError
@@ -516,7 +516,7 @@ def FOR_ITER(f, jumpby):
     w_iterator = f.valuestack.top()
     try:
         w_nextitem = f.space.iternext(w_iterator)
-    except pypy.NoValue:
+    except objectspace.NoValue:
         # iterator exhausted
         f.valuestack.pop()
         f.next_instr += jumpby
