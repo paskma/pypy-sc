@@ -245,6 +245,8 @@ class SContinueLoop(StackUnroller):
 class SReturnValue(StackUnroller):
     """Signals a 'return' statement.
     Argument is the wrapped object to return."""
+    def unrolledblock(self, frame, block):
+        pass
     def emptystack(self, frame):
         # XXX do something about generators, like throw a NoValue
         w_returnvalue, = self.args
