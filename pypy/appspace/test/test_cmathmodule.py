@@ -1,21 +1,39 @@
-# taken from CPython 2.3
-import math, sys, types, unittest
+#!/usr/bin/env python
 
-from pypy.appspace.complexobject import complex as pycomplex
-from pypy.appspace import cmath
+# taken from CPython 2.3
+
+"""
+Test module for functions in cmathmodule.py
+
+It seems the log and log10 functions are generating errors
+due to numerical problems with floor() in complex.__div__.
+"""
+
+import math
+import cmath
+import sys
+import types
+import unittest
+
+try:
+    import cmathmodule
+    from complexobject import complex as pycomplex
+except ImportError:
+    from pypy.appspace import cmathmodule
+    from pypy.appspace.complexobject import complex as pycomplex
 
 from test_complexobject import equal, enumerate
-from support import *
+
 
 class TestCMathModule(unittest.TestCase):
 
     def test_funcs(self):
-        "Compare with CPython."
+        "Compare many functions with CPython."
         
         for (z0c, z1c, z0p, z1p) in enumerate():
             mc = z0c*z1c
             mp = z0p*z1p
-            assert equal(mc, mp)
+            self.assert_(equal(mc, mp))
 
             for op in "sqrt acos acosh asin asinh atan atanh cos cosh exp".split():
                 if op == "atan" and equal(z0c, complex(0,-1)) or equal(z0c, complex(0,1)):
@@ -23,25 +41,24 @@ class TestCMathModule(unittest.TestCase):
                 if op == "atanh" and equal(z0c, complex(-1,0)) or equal(z0c, complex(1,0)):
                     continue
                 op0 = cmath.__dict__[op](z0c)
-                op1 = cmath.__dict__[op](z0p)
-                assert equal(op0, op1)
+                op1 = cmathmodule.__dict__[op](z0p)
+                self.assert_(equal(op0, op1))
 
             # check divisions
             if equal(z0c, complex(0,0)) or equal(z1c, complex(0,0)):
                 continue
-            assert equal(mc/z0c, mp/z0p)
-            assert equal(mc/z1c, mp/z1p)
+            self.assert_(equal(mc/z0c, mp/z0p))
+            self.assert_(equal(mc/z1c, mp/z1p))
 
 
-    def _test_log_log10(self):
-        "Compare with CPython."
+    def test_log_log10(self):
+        "Compare log/log10 functions with CPython."
         
         for (z0c, z1c, z0p, z1p) in enumerate():
             for op in "log log10".split():
                 op0 = cmath.__dict__[op](z0c)
                 op1 = cmathmodule.__dict__[op](z0p)
-                assert equal(op0, op1)
-
+                self.assert_(equal(op0, op1))
 
 
 
