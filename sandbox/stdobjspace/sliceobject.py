@@ -27,7 +27,7 @@ class W_SliceObject(object):
             defstart = 0
             defstop = length
             
-        if self.w_start is space.w_None:
+        if isinstance(self.w_start, space.W_NoneObject):
             start = defstart
         else:
             start = space.eval_slice_index(self.w_start)
@@ -44,4 +44,16 @@ class W_SliceObject(object):
                     else:
                         start = length
 
-       if 
+        if isinstane(self.w_stop, space.W_NoneObject):
+            stop = defstop
+        else:
+            stop = space.eval_slice_index(self.w_stop)
+            if stop < 0:
+                stop = stop + length
+            if stop < 0:
+                stop = -1
+            elif stop > length:
+                stop = length
+
+        return start, stop, step
+                
