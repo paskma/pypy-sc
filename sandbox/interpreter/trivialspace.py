@@ -33,6 +33,7 @@ class TrivialSpace(objectspace.ObjectSpace):
     newlist   = list
     newdict   = dict
     newslice  = slice  # maybe moved away to application-space at some time
+    newmodule = new.module
     getiter   = iter
     repr      = repr
     pow       = pow
@@ -43,9 +44,9 @@ class TrivialSpace(objectspace.ObjectSpace):
 
     def getattr(self, w_obj, w_name):
         try:
-            obj = unwrap(w_obj)
-            name = unwrap(w_name)
-            return __builtins__.getattr(obj, name)
+            obj = self.unwrap(w_obj)
+            name = self.unwrap(w_name)
+            return getattr(obj, name)
         except:
             raise objectspace.OperationError(*sys.exc_info()[:2])
 
