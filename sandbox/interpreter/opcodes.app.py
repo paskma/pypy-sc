@@ -2,7 +2,7 @@ import sys
 
 
 def print_expr(x):
-    try:
+    try: 
         displayhook = sys.displayhook
     except AttributeError:
         raise RuntimeError, "lost sys.displayhook"
