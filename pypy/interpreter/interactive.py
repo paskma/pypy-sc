@@ -31,7 +31,7 @@ class PyPyConsole(code.InteractiveConsole):
             self.ec.eval_frame(frame)
         except baseobjspace.OperationError, e:
             print "Traceback"
-            tb = e.w_traceback[::-1]
+            tb = e.w_traceback[:]
             tb.reverse()
             for f, i in tb:
                 co = f.bytecode
