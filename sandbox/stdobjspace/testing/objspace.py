@@ -46,7 +46,9 @@ class ObjSpace:
     abs = FakeRegister()
     nonzero = FakeRegister()
     coerce = FakeRegister()
-
+    int = FakeRegister()
+    long = FakeRegister()
+    float = FakeRegister()
 
     w_TypeError = "w_TypeError"
     w_OverflowError = "w_OverflowError"
