@@ -1,10 +1,10 @@
 
-
 trunk/
     src/
         sandbox/interpreter  
         sandbox/modules  
         sandbox/objects  
+	sanxbox/compiler   <-- branched off of CPython-2.3a1
 
     www/
         moincode/       -> site-packages/MoinMoin
