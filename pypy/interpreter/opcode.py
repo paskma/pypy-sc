@@ -241,8 +241,8 @@ def RAISE_VARARGS(f, nbargs):
         w_resulttuple = f.space.gethelper(appfile).call("prepare_raise0")
     elif nbargs == 1:
         w_exc = f.valuestack.pop()
-        w_resulttuple = f.space.gethelper(appfile).call("prepare_raise1",
-                                                        [w_exc])
+        w_resulttuple = f.space.gethelper(appfile).call(
+            "prepare_raise", [w_exc, None, None])
     elif nbargs == 2:
         w_value = f.valuestack.pop()
         w_exc   = f.valuestack.pop()
@@ -252,9 +252,8 @@ def RAISE_VARARGS(f, nbargs):
         w_traceback = f.valuestack.pop()
         w_value     = f.valuestack.pop()
         w_exc       = f.valuestack.pop()
-        w_resulttuple = f.space.gethelper(appfile).call("prepare_raise3",
-                                                        [w_exc, w_value,
-                                                         w_traceback])
+        w_resulttuple = f.space.gethelper(appfile).call(
+            "prepare_raise", [w_exc, w_value, w_traceback])
     else:
         raise pyframe.BytecodeCorruption, "bad RAISE_VARARGS oparg"
     w_exception, w_value, w_traceback = pyframe.unpackiterable(f.space,

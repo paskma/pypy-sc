@@ -1,9 +1,32 @@
-#def prepare_raise0():
-#    ...
-
-def prepare_raise(etype, value, tb):
-    return etype, etype(value), None
+def prepare_raise0():
+    import sys
+    return sys.exc_info()
     
+def prepare_raise(etype, value, tb):
+    import types
+    if  tb is not None and not isinstance(tb, types.TracebackType):
+            raise TypeError, "raise: arg 3 must be traceback or None"
+    while isinstance(etype, tuple):
+        etype = etype[0]
+    if type(etype) is str:
+        # warn
+        pass
+    elif isinstance(etype, types.ClassType):
+        if value is None:
+            value = ()
+        elif not isinstance(value, tuple):
+            value = (value,)
+        value = etype(*value)
+    elif isinstance(etype, types.InstanceType):
+        if value is not None:
+            raise TypeError, "instance exception may not have a separate value"
+        value = etype
+        etype = value.__class__
+    else:
+        raise TypeError, "exceptions must be classes, instances, or " \
+              "strings (deprecated), not %s"%(type(etype).__name__,)
+    return etype, value, tb
+
 def build_class(methods, bases, name):
     return classobj(name, bases, methods)
 

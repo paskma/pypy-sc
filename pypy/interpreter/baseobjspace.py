@@ -9,6 +9,10 @@ class OperationError(Exception):
     sent to the application level.
     
     Arguments are the object-space exception class and value."""
+
+    def __init__(self, w_exc, w_value, w_tb=None):
+        self.args = w_exc, w_value
+        self.w_tb = w_tb # this isn't much use yet.
     
     def __str__(self):
         "Convenience for tracebacks."
@@ -23,6 +27,8 @@ class OperationError(Exception):
         value = space.unwrap(w_value)
         print >> sys.stderr, "*"*10, " OperationError ", "*"*10
         traceback.print_tb(tb)
+##         if self.w_tb:
+##             traceback.print_tb(space.unwrap(self.w_tb))
         msg = traceback.format_exception_only(exc, value)
         print >> sys.stderr, "[Application-level]", ''.join(msg).strip()
         print >> sys.stderr, "*"*10

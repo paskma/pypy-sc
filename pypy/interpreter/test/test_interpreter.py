@@ -20,7 +20,6 @@ def testcode(code, functionname, args, space=None):
     return space.unwrap(w_output)
 
 
-
 class TestInterpreter(unittest.TestCase):
 
     def test_trivial(self):
@@ -60,6 +59,17 @@ def f():
 ''', 'f', [])
         self.assertEquals(x, 1)
 
+    def test_finally(self):
+        code = '''
+def f(a):
+    try:
+        if a:
+            raise Exception
+    finally:
+        return 2
+'''
+        self.assertEquals(testcode(code, 'f', [0]), 2)
+        self.assertEquals(testcode(code, 'f', [1]), 2)
 
 
 if __name__ == '__main__':

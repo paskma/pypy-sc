@@ -50,7 +50,7 @@ class TrivialObjSpace(ObjSpace):
             name = self.unwrap(w_name)
             return getattr(obj, name)
         except:
-            raise OperationError(*sys.exc_info()[:2])
+            raise OperationError(*sys.exc_info())
 
     for _name in ('pos', 'neg', 'not_', 'pos', 'neg', 'not_', 'invert',
                  'mul', 'truediv', 'floordiv', 'div', 'mod',
@@ -61,8 +61,7 @@ def %(_name)s(self, *args):
     try:
         return operator.%(_name)s(*args)
     except:
-        cls, value, tb = sys.exc_info()
-        raise OperationError(cls, value)
+        raise OperationError(*sys.exc_info())
 """ % locals()
 
     # in-place operators
