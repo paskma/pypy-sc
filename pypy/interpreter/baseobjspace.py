@@ -14,15 +14,13 @@ class OperationError(Exception):
     
     def __str__(self):
         "Convenience for tracebacks."
-        w_exc, w_value = self.args
-        return '[%s: %s]' % (w_exc, w_value)
+        return '[%s: %s]' % (self.w_type, self.w_value)
     def nicetraceback(self, space):
         "Dump a nice custom traceback to sys.stderr."
         import sys, traceback
         traceback = sys.exc_info()[2]
-        w_exc, w_value = self.args
-        exc = space.unwrap(w_exc)
-        value = space.unwrap(w_value)
+        exc = space.unwrap(self.w_type)
+        value = space.unwrap(self.w_value)
         print >> sys.stderr, "*"*10, " OperationError ", "*"*10
         traceback.print_tb(traceback)
 ##         if self.w_traceback:
