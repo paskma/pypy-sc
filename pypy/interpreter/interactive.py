@@ -31,7 +31,9 @@ class PyPyConsole(code.InteractiveConsole):
             self.ec.eval_frame(frame)
         except baseobjspace.OperationError, e:
             print "Traceback"
-            for f, i in e.w_traceback[::-1]:
+            tb = e.w_traceback[::-1]
+            tb.reverse()
+            for f, i in tb:
                 co = f.bytecode
                 fname = co.co_filename
                 lineno = offset2lineno(co, i)
