@@ -1,16 +1,15 @@
 
 import autopath
-from pypy.tool import testit 
 import unittest
 
 
-class AppTestCodeIntrospection(testit.AppTestCase):
+class AppTestCodeIntrospection:
 
     def test_attributes(self):
         def f(): pass
         def g(x, *y, **z): "docstring"
-        self.assert_(hasattr(f.func_code, 'co_code'))
-        self.assert_(hasattr(g.func_code, 'co_code'))
+        assert hasattr(f.func_code, 'co_code')
+        assert hasattr(g.func_code, 'co_code')
 
         testcases = [
             (f.func_code, {'co_name': 'f',
@@ -47,13 +46,17 @@ class AppTestCodeIntrospection(testit.AppTestCase):
         # in PyPy, built-in functions have code objects
         # that emulate some attributes
         for code, expected in testcases:
-            self.assert_(hasattr(code, '__class__'))
-            self.assert_(not hasattr(code,'__dict__'))
+            assert hasattr(code, '__class__')
+            assert not hasattr(code,'__dict__')
             for key, value in expected.items():
-                self.assertEquals(getattr(code, key), value)
+                assert getattr(code, key) == value
 
     def test_code(self):
-        import sys, new
+        import sys
+        try: 
+            import new
+        except ImportError: 
+            skip("could not import new module")
         if sys.pypy_objspaceclass == 'TrivialObjSpace':
             return   # skip
         codestr = "global c\na = 1\nb = 2\nc = a + b\n"
@@ -74,7 +77,7 @@ class AppTestCodeIntrospection(testit.AppTestCase):
                       ccode.co_cellvars)
         d = {}
         exec co in d
-        self.assertEquals(d['c'], 3)
+        assert d['c'] == 3
         # test backwards-compatibility version with no freevars or cellvars
         co = new.code(ccode.co_argcount,
                       ccode.co_nlocals,
@@ -90,7 +93,4 @@ class AppTestCodeIntrospection(testit.AppTestCase):
                       ccode.co_lnotab)
         d = {}
         exec co in d
-        self.assertEquals(d['c'], 3)
-
-if __name__ == '__main__':
-    testit.main()
+        assert d['c'] == 3

@@ -1,16 +1,14 @@
 import autopath, os
 from py.process import cmdexec 
-from pypy.tool import testit
 from pypy.tool.udir import udir
 from pypy.translator.java.genjava import GenJava
 from pypy.translator.test import snippet
 from pypy.translator.translator import Translator
 
 
-class NoTypeCGenTestCase(testit.IntTestCase):
+class TestNoTypeCGenTestCase:
 
-    def setUp(self):
-        self.space = testit.objspace('flow')
+    objspacename = 'flow'
 
     def build_jfunc(self, func):
         try: func = func.im_func
@@ -27,7 +25,7 @@ class NoTypeCGenTestCase(testit.IntTestCase):
         try:
             os.chdir(str(self.jdir))
             cmdexec('javac *.java')
-            self.assertEquals(cmdexec('java test').strip(), 'OK')
+            assert cmdexec('java test').strip() == 'OK'
         finally:
             os.chdir(cwd)
 
@@ -48,7 +46,3 @@ class NoTypeCGenTestCase(testit.IntTestCase):
     def test_sieve_of_eratosthenes(self):
         self.build_jfunc(snippet.sieve_of_eratosthenes)
         self.check([], 1028)
-
-
-if __name__ == '__main__':
-    testit.main()
