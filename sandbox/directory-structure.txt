@@ -3,6 +3,8 @@
 trunk/
     src/
         sandbox/interpreter  
+        sandbox/modules  
+        sandbox/objects  
 
     www/
         moincode/       -> site-packages/MoinMoin
