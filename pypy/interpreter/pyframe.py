@@ -181,8 +181,20 @@ class ExceptionInFinally(FrameBlock):
 
 class StackUnroller(Exception):
     """Abstract base class for interpreter-level exceptions that unroll the
-    block stack.  The concrete class depends on the reason why we want to
-    unroll it."""
+    block stack.
+
+    The concrete subclasses correspond to the various values WHY_XXX
+    values of the why_code enumeration in ceval.c:
+
+		WHY_NOT,	OK, not this one :-)
+		WHY_EXCEPTION,	SApplicationException
+		WHY_RERAISE,	we don't think this is needed
+		WHY_RETURN,	SReturnValue
+		WHY_BREAK,	SBreakLoop
+		WHY_CONTINUE,	SContinueLoop
+		WHY_YIELD	SYieldValue
+
+    """
     def unrollstack(self, frame):
         "Default unroller implementation."
         try:
@@ -208,7 +220,7 @@ class SApplicationException(StackUnroller):
             w_exc_class, w_exc_value = self.args
             # XXX trackback?
             if 1:
-                            frame.valuestack.push(w_exc_value) # HACK HACK XXX
+                frame.valuestack.push(w_exc_value) # HACK HACK XXX
             frame.valuestack.push(w_exc_value)
             frame.valuestack.push(w_exc_class)
             frame.next_instr = block.handlerposition   # jump to the handler
