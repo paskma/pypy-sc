@@ -88,7 +88,7 @@ assert f(p, a) == c(p)(a) == r
   already part of the cpython distribution, needs a python lexer)
 
 - doing other things than interpreting byte code from the python interp
-  loop, for example generate C code, implement other object spaces in our terminlogy
-  other far fetched things with execution
+  loop, for example generate C code, implement other object spaces in our
+  terminlogy other far fetched things with execution
 
 - how to enter c ysystem calls into the python object space (ctypes)
