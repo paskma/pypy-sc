@@ -19,7 +19,6 @@ def unwrap(w):
 # from the built-ins
 type      = type
 #no used yet: checktype = isinstance  # no tuple of types is allowed in 'checktype'
-apply     = apply
 newtuple  = tuple
 newlist   = list
 newdict   = dict
@@ -91,6 +90,19 @@ def iternext(w):
 
 def newfunction(code, globals, defaultarguments, closure=None):
     return new.function(code, globals, None, defaultarguments, closure)
+
+def apply(callable, args, kwds):
+    if isinstance(callable, types.FunctionType):
+        import trivialspace as space
+        bytecode = callable.func_code
+        w_globals = space.wrap(callable.func_globals)
+        w_locals = space.newdict([])
+        frame = PyFrame(space, bytecode, w_globals, w_locals)
+        # perform call
+        frame.setargs(args, kwds)
+        return frame.eval()
+    else:
+        return apply(callable, args, kwds)
 
 
 # comparisons
