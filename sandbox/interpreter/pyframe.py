@@ -209,6 +209,7 @@ class SApplicationException(StackUnroller):
             # exception handler (the code after the except:)
             w_exc_class, w_exc_value = self.args
             # XXX trackback?
+                            frame.valuestack.push(w_exc_value) # HACK HACK XXX
             frame.valuestack.push(w_exc_value)
             frame.valuestack.push(w_exc_class)
             frame.next_instr = block.handlerposition   # jump to the handler
