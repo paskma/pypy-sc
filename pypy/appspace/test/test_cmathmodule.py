@@ -1,15 +1,11 @@
 # taken from CPython 2.3
 import math, sys, types, unittest
 
-from test_support import *
-
 from pypy.appspace.complexobject import complex as pycomplex
-from pypy.appspace import cmath as cmathmodule 
-
-import cmath
+from pypy.appspace import cmath
 
 from test_complexobject import equal, enumerate
-
+from support import *
 
 class TestCMathModule(unittest.TestCase):
 
@@ -27,7 +23,7 @@ class TestCMathModule(unittest.TestCase):
                 if op == "atanh" and equal(z0c, complex(-1,0)) or equal(z0c, complex(1,0)):
                     continue
                 op0 = cmath.__dict__[op](z0c)
-                op1 = cmathmodule.__dict__[op](z0p)
+                op1 = cmath.__dict__[op](z0p)
                 assert equal(op0, op1)
 
             # check divisions

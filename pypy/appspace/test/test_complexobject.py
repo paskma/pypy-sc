@@ -1,10 +1,12 @@
 #taken from CPython 2.3 (?)
+
+import setpath
+from pypy.appspace.complexobject import complex as pycomplex
+
+import cmath
 import math, sys, types, unittest
 
-from pypy.appspace.complexobject import complex as pycomplex
-from pypy.appspace import cmath
-
-from test_support import *
+from support import *
 
 def equal(a, b):
     "Compare two complex or normal numbers. 0 if different, 1 if roughly equal."
