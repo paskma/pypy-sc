@@ -53,14 +53,15 @@ class Helper:
 
     def get(self, objname):
         "Returns a wrapped copy of an object by name."
-        w_name = space.wrap(objname)
-        w_obj = space.getitem(self.w_namespace, w_name)
+        w_name = self.space.wrap(objname)
+        w_obj = self.space.getitem(self.w_namespace, w_name)
         return w_obj
 
     def call(self, functionname, argumentslist):
-        w_function = self.get(space, functionname)
-        w_arguments = space.newtuple(argumentslist)
-        return space.apply(w_function, w_arguments)
+        w_function = self.get(functionname)
+        w_arguments = self.space.newtuple(argumentslist)
+        w_keywords = self.space.newdict([])
+        return self.space.apply(w_function, w_arguments, w_keywords)
 
 
 ##################################################################
@@ -85,7 +86,7 @@ class ObjectSpace:
                 if result.space is self:
                     return result
             f = f.f_back
-        raise ValueError, "no active execution context found"
+        return executioncontext.ExecutionContext(self)
 
     def gethelper(self, applicationfile):
         try:

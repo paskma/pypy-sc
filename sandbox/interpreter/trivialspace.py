@@ -108,19 +108,19 @@ def %(_name)s(self, *args):
             raise objectspace.NoValue
 
     def newfunction(self, code, globals, defaultarguments, closure=None):
+        if closure is None:   # temp hack
+            return new.function(code, globals, None, defaultarguments)
         return new.function(code, globals, None, defaultarguments, closure)
 
     def apply(self, callable, args, kwds):
         if isinstance(callable, types.FunctionType):
-            import trivialspace as space
-            import executioncontext
             bytecode = callable.func_code
-            w_globals = space.wrap(callable.func_globals)
-            w_locals = space.newdict([])
-            frame = pyframe.PyFrame(space, bytecode, w_globals, w_locals)
+            ec = self.getexecutioncontext()
+            w_globals = ec.make_standard_w_globals()
+            w_locals = self.newdict([])
+            frame = pyframe.PyFrame(self, bytecode, w_globals, w_locals)
             # perform call
             frame.setargs(args, kwds)
-            ec = executioncontext.getexecutioncontext()
             return ec.eval_frame(frame)
         else:
             return __builtins__.apply(callable, args, kwds)
@@ -162,5 +162,5 @@ def %(_name)s(self, *args):
         }
 
     def richcompare(self, w1, w2, operation):
-        fn = operation_by_name[operation]
+        fn = self.operation_by_name[operation]
         return fn(w1, w2)
