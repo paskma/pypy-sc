@@ -1,10 +1,10 @@
+#taken from CPython 2.3 (?)
 import math, sys, types, unittest
 
+from pypy.appspace.complexobject import complex as pycomplex
+from pypy.appspace import cmath
+
 from test_support import *
-
-from complexobject import complex as pycomplex
-import cmath
-
 
 def equal(a, b):
     "Compare two complex or normal numbers. 0 if different, 1 if roughly equal."
@@ -24,9 +24,6 @@ def equal(a, b):
             return 0
         else:
             return 1
-    
-
-
 
 def enumerate():
     valueRange = xrange(-3, 3)

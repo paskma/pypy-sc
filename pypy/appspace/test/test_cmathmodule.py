@@ -1,10 +1,12 @@
+# taken from CPython 2.3
 import math, sys, types, unittest
 
 from test_support import *
 
-from complexobject import complex as pycomplex
+from pypy.appspace.complexobject import complex as pycomplex
+from pypy.appspace import cmath as cmathmodule 
+
 import cmath
-import cmathmodule
 
 from test_complexobject import equal, enumerate
 
