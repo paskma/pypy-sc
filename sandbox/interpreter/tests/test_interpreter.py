@@ -18,6 +18,7 @@ class TestInterpreter(unittest.TestCase):
 
     def test_trivial_call(self):
         x = testcode('''
+print 42
 def f(): return 42
 def g(): return f()''', 'g', [])
         self.assertEquals(x, 42)

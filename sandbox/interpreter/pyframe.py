@@ -190,7 +190,7 @@ class StackUnroller(Exception):
         try:
             while not frame.blockstack.empty():
                 block = frame.blockstack.pop()
-                block.unroll(frame)
+                block.unroll(frame, self)
                 self.unrolledblock(frame, block)
             self.emptystack(frame)
         except StopUnrolling:
@@ -208,8 +208,8 @@ class SApplicationException(StackUnroller):
             # push the exception to the value stack for inspection by the
             # exception handler (the code after the except:)
             w_exc_class, w_exc_value = self.args
-            self.valuestack.push(w_exc_value)
-            self.valuestack.push(w_exc_class)
+            frame.valuestack.push(w_exc_value)
+            frame.valuestack.push(w_exc_class)
             frame.next_instr = block.handlerposition   # jump to the handler
             raise StopUnrolling
     def emptystack(self, frame):

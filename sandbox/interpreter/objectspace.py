@@ -47,10 +47,10 @@ class Module:
         if appfile is not None:
             self.loadappfile(appfile, ec)
 
-    def loadappfile(self, appfile, executioncontext=None):
+    def loadappfile(self, appfile, ec=None):
         # initialize the module by running the bytecode in a new
         # dictionary, in a new execution context
-        if executioncontext is None:
+        if ec is None:
             ec = self.space.getexecutioncontext()
         frame = pyframe.PyFrame(self.space, appfile.bytecode,
                                 self.w_namespace, self.w_namespace)

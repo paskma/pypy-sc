@@ -1,5 +1,3 @@
-import sys, new
-
 #def prepare_raise0():
 #    ...
 #def prepare_raise1(type):
@@ -13,6 +11,7 @@ def build_class(methods, bases, name):
     return classobj(name, bases, methods)
 
 def print_expr(x):
+    import sys
     try:
         displayhook = sys.displayhook
     except AttributeError:
@@ -36,6 +35,7 @@ def print_item_to(x, stream):
     # XXX add softspaces
 
 def print_item(x):
+    import sys
     try:
         stream = sys.stdout
     except AttributeError:
@@ -47,6 +47,7 @@ def print_newline_to(stream):
     file_softspace(stream, False)
 
 def print_newline():
+    import sys
     try:
         stream = sys.stdout
     except AttributeError:

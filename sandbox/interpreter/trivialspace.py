@@ -131,7 +131,8 @@ def %(_name)s(self, *args):
             frame.setargs(args, kwds)
             return ec.eval_frame(frame)
         else:
-            return __builtins__.apply(callable, args, kwds)
+            import __builtin__
+            return __builtin__.apply(callable, args, kwds)
 
     # comparisons
     def in_(w1, w2):
