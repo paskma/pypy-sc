@@ -38,16 +38,21 @@ class AppFile(HelperBytecode):
         HelperBytecode.__init__(self, src, filename)
 
 
-class Helper:
+class Module:
 
-    def __init__(self, space, appfile):
-        "Send the helper module to the given object space."
+    def __init__(self, space, appfile=None):
         self.space = space
+        ec = space.getexecutioncontext()
+        self.w_namespace = ec.make_standard_w_globals()
+        if appfile is not None:
+            self.loadappfile(appfile, ec)
+
+    def loadappfile(self, appfile, executioncontext=None):
         # initialize the module by running the bytecode in a new
         # dictionary, in a new execution context
-        ec = executioncontext.ExecutionContext(space)
-        self.w_namespace = ec.make_standard_w_globals()
-        frame = pyframe.PyFrame(space, appfile.bytecode,
+        if executioncontext is None:
+            ec = self.space.getexecutioncontext()
+        frame = pyframe.PyFrame(self.space, appfile.bytecode,
                                 self.w_namespace, self.w_namespace)
         ec.eval_frame(frame)
 
@@ -75,6 +80,13 @@ class ObjectSpace:
         self.w_builtins = self.newdict([])
         self.w_modules  = self.newdict([])
         self.appfile_helpers = {}
+        self.initialize()
+        import builtins
+        builtins.init(self)
+
+    def initialize(self):
+        """Abstract method that should put some minimal content into the
+        w_builtins."""
 
     def getexecutioncontext(self):
         "Return what we consider to be the active execution context."
@@ -92,7 +104,7 @@ class ObjectSpace:
         try:
             helper = self.appfile_helpers[applicationfile]
         except KeyError:
-            helper = Helper(self, applicationfile)
+            helper = Module(self, applicationfile)
             self.appfile_helpers[applicationfile] = helper
         return helper
 

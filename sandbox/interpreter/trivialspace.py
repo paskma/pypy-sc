@@ -9,8 +9,7 @@ import operator, types, new, sys
 
 class TrivialSpace(objectspace.ObjectSpace):
 
-    def __init__(self):
-        objectspace.ObjectSpace.__init__(self)
+    def initialize(self):
         import __builtin__, types
         self.w_builtins.update(__builtin__.__dict__)
         for n, c in self.w_builtins.iteritems():
@@ -117,6 +116,9 @@ def %(_name)s(self, *args):
         if closure is None:   # temp hack
             return new.function(code, globals, None, defaultarguments)
         return new.function(code, globals, None, defaultarguments, closure)
+
+    def newstring(self, asciilist):
+        return ''.join([chr(ascii) for ascii in asciilist])
 
     def apply(self, callable, args, kwds):
         if isinstance(callable, types.FunctionType):
