@@ -72,9 +72,12 @@ class ObjSpace:
         thisglobals = {}
         thislocals = {}
         try:
-            execfile(name+'-app.py',thismod.__dict__)
-        except IOError:
-            execfile(name+'.app.py',thismod.__dict__)
+            execfile(name+'_app.py',thismod.__dict__)
+        except:
+            try:
+                execfile(name+'-app.py',thismod.__dict__)
+            except IOError:
+                execfile(name+'.app.py',thismod.__dict__)
         #namespace = thislocals.update(thisglobals)
         ret = CallWrapper(thismod)
         return ret
