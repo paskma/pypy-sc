@@ -55,6 +55,11 @@ def load_name(name, locals, globals, builtins):
             except KeyError:
                 raise NameError, "name '%s' is not defined" % name
 
+def load_closure(locals, name):
+    # this assumes that 'locals' is an extended dictionary with a
+    # 'cell' method to explicitely access a cell
+    return locals.cell(name)
+
 def concatenate_arguments(args, extra_args):
     return args + tuple(extra_args)
 

@@ -31,7 +31,9 @@ class binaryoperation:
 
 def LOAD_FAST(f, varindex):
     varname = f.getlocalvarname(varindex)
-    x = f.locals[varname]
+    w_varname = f.space.wrap(varname)
+    x = f.space.getitem(f.w_locals, w_varname)
+    # XXX catch KeyError and make it a NameError
     f.valuestack.push(x)
 
 def LOAD_CONST(f, constindex):
@@ -39,9 +41,10 @@ def LOAD_CONST(f, constindex):
     f.valuestack.push(x)
 
 def STORE_FAST(f, varindex):
-    v = f.valuestack.pop()
     varname = f.getlocalvarname(varindex)
-    f.locals[varname] = v
+    w_varname = f.space.wrap(varname)
+    v = f.valuestack.pop()
+    f.space.setitem(f.w_locals, w_varname, v)
 
 def POP_TOP(f):
     f.valuestack.pop()
@@ -250,8 +253,7 @@ def RAISE_VARARGS(f, nbargs):
         raise pyframe.BytecodeCorruption
 
 def LOAD_LOCALS(f):
-    x = f.space.wrap(f.locals)
-    f.valuestack.push(x)
+    f.valuestack.push(f.w_locals)
 
 def RETURN_VALUE(f):
     v_returnvalue = f.valuestack.pop()
@@ -290,12 +292,15 @@ def BUILD_CLASS(f):
 
 def STORE_NAME(f, varindex):
     varname = f.getname(varindex)
+    w_varname = f.space.wrap(varname)
     v = f.valuestack.pop()
-    f.locals[varname] = v
+    f.space.setitem(f.w_locals, w_varname, v)
 
 def DELETE_NAME(f, varindex):
     varname = f.getname(varindex)
-    del f.locals[varname]
+    w_varname = f.space.wrap(varname)
+    f.space.delitem(f.w_locals, w_varname)
+    # XXX catch KeyError and make it a NameError
 
 def UNPACK_SEQUENCE(f, itemcount):
     v = f.valuestack.pop()
@@ -356,9 +361,8 @@ def DELETE_GLOBAL(f, nameindex):
 def LOAD_NAME(f, nameindex):
     varname = f.getname(nameindex)
     w_varname = f.space.wrap(varname)
-    w_locals = f.space.wrap(f.locals)
     x = applicationfile.call(f.space, "load_name",
-                             [w_varname, w_locals, f.w_globals, f.w_builtins])
+                             [w_varname, f.w_locals, f.w_globals, f.w_builtins])
     f.valuestack.push(x)
 
 def LOAD_GLOBAL(f, nameindex):
@@ -390,27 +394,33 @@ def LOAD_GLOBAL(f, nameindex):
 
 def DELETE_FAST(f, varindex):
     varname = f.getlocalvarname(varindex)
-    del f.locals[varname]
+    w_varname = f.space.wrap(varname)
+    f.space.delitem(f.w_locals, w_varname)
+    # XXX catch KeyError and make it a NameError
 
 def LOAD_CLOSURE(f, varindex):
     # nested scopes: access the cell object
     # XXX at some point implement an explicit traversal of
-    #     syntactically nested frames
+    #     syntactically nested frames?
     varname = f.getfreevarname(varindex)
-    x = f.locals.cell(varname)
+    w_varname = f.space.wrap(varname)
+    x = applicationfile.call(f.space, "load_closure", [f.w_locals, w_varname])
     f.valuestack.push(x)
 
 def LOAD_DEREF(f, varindex):
     # nested scopes: access a variable through its cell object
     varname = f.getfreevarname(varindex)
-    x = f.locals[varname]
+    w_varname = f.space.wrap(varname)
+    x = f.space.getitem(f.w_locals, w_varname)
+    # XXX catch KeyError and make it a NameError
     f.valuestack.push(x)
 
 def STORE_DEREF(f, varindex):
     # nested scopes: access a variable through its cell object
     varname = f.getfreevarname(varindex)
-    x = f.valuestack.pop()
-    f.locals[varname] = x
+    w_varname = f.space.wrap(varname)
+    v = f.valuestack.pop()
+    f.space.setitem(f.w_locals, w_varname, v)
 
 def BUILD_TUPLE(f, itemcount):
     items = [f.valuestack.pop() for i in range(itemcount)]
@@ -450,18 +460,16 @@ def COMPARE_OP(f, test):
 def IMPORT_NAME(f, nameindex):
     modulename = f.getname(nameindex)
     w_modulename = f.space.wrap(modulename)
-    w_locals = f.space.wrap(f.locals)
     w_fromlist = f.valuestack.pop()
     x = applicationfile.call(f.space, "import_name",
                              [f.w_builtins, w_modulename, f.w_globals,
-                              w_locals, w_fromlist])
+                              f.w_locals, w_fromlist])
     f.valuestack.push(x)
 
 def IMPORT_STAR(f):
     w_module = f.valuestack.pop()
-    w_locals = f.space.wrap(f.locals)
     applicationfile.call(f.space, "import_star",
-                         [w_module, w_locals])
+                         [w_module, f.w_locals])
 
 def IMPORT_FROM(f, nameindex):
     name = f.getname(nameindex)
