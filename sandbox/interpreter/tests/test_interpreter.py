@@ -49,8 +49,8 @@ def f():
     try:
         raise Exception, 1
     except Exception, e:
-        return e.args''', 'f', [])
-        self.assertEquals(x, 666)
+        return e.args[0]''', 'f', [])
+        self.assertEquals(x, 1)
 
 
 
