@@ -1,11 +1,8 @@
 #def prepare_raise0():
 #    ...
-#def prepare_raise1(type):
-#    ...
-#def prepare_raise2(type,value):
-#    ...
-#def prepare_raise3(type,value, traceback):
-#    ...
+
+def prepare_raise(etype, value, tb):
+    return etype, etype(value), None
     
 def build_class(methods, bases, name):
     return classobj(name, bases, methods)

@@ -246,8 +246,8 @@ def RAISE_VARARGS(f, nbargs):
     elif nbargs == 2:
         w_value = f.valuestack.pop()
         w_exc   = f.valuestack.pop()
-        w_resulttuple = f.space.gethelper(appfile).call("prepare_raise2",
-                                                        [w_exc, w_value])
+        w_resulttuple = f.space.gethelper(appfile).call(
+            "prepare_raise", [w_exc, w_value, None])
     elif nbargs == 3:
         w_traceback = f.valuestack.pop()
         w_value     = f.valuestack.pop()

@@ -51,7 +51,7 @@ def f():
     try:
         raise Exception, 1
     except Exception, e:
-        return e.args
+        return e.args[0]
 ''', 'f', [])
         self.assertEquals(x, 1)
 
