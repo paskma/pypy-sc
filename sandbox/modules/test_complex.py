@@ -120,7 +120,15 @@ for x0 in xrange(-3, 3):
                 assert equal(mc, mp)
                 assert equal(sc, sp)
                 assert equal(dc, dp)
-                
+
+                if not equal(z0c, 0j) and (z1c.imag != 0.0):
+                     pc = z0c**z1c
+                     pp = z0p**z1p
+                     assert equal(pc, pp)
+                     pc = z0c**x0
+                     pp = z0p**x0
+                     assert equal(pc, pp)
+                                
                 for op in "sqrt acos acosh asin asinh atan atanh cos cosh exp".split():
                     if op == "atan" and equal(z0c, complex(0,-1)) or equal(z0c, complex(0,1)):
                         continue

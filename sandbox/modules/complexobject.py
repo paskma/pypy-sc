@@ -161,8 +161,11 @@ class complex(object):
         return d, m
 
 
-    # c_pow
     def __pow__(self, other):
+
+        if other.__class__ != complex:
+            other = complex(other, 0)
+                    
         a, b = self, other
         r = complex()
 
@@ -187,33 +190,7 @@ class complex(object):
 
         return r
 
-    # c_powu
-    # c_powi
 
-    # complex_pow
-    def __pow__(self, w, z):
-        if z is not None:
-            raise ValueError, "complex modulo"
-
-        # PyFPE_START_PROTECT("complex_pow", return 0)
-        errnum = 0
-        exponent = w
-        int_exponent = exponent.real
-        if exponent.imag == 0. and exponent.real == int_exponent:
-            p = 0 # c_powi(v->cval,int_exponent)
-        else:
-            p = 0 # c_pow(v->cval,exponent)
-
-        # PyFPE_END_PROTECT(p)
-        # Py_ADJUST_ERANGE2(p.real, p.imag);
-        if errnum == errno.EDOM:
-            raise ZeroDivisionError, "0.0 to a negative or complex power"
-        elif errnum == errno.ERANGE:
-            raise OverflowError, "complex exponentiaion"
-
-        return p
-        
-        
     def __neg__(self):
         return complex(-self.real, -self.imag)
 
