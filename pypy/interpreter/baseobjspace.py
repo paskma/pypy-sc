@@ -1,8 +1,5 @@
-import os
-import executioncontext, pyframe
 
-__all__ = ['ObjSpace', 'OperationError', 'NoValue', 'AppFile']
-
+__all__ = ['ObjSpace', 'OperationError', 'NoValue']
 
 class OperationError(Exception):
     """Interpreter-level exception that signals an exception that should be
@@ -33,68 +30,15 @@ class OperationError(Exception):
         print >> sys.stderr, "[Application-level]", ''.join(msg).strip()
         print >> sys.stderr, "*"*10
 
-
 class NoValue(Exception):
     """Raised to signal absence of value, e.g. in the iterator accessing
     method 'iternext()' of object spaces."""
 
 
-
-class AppFile:
-    """Dynamic loader of a set of Python functions and objects that
-    should work at the application level (conventionally in .app.py files)"""
-
-    # absolute name of the parent directory
-    ROOTDIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-    def __init__(self, filename):
-        "Load and compile the file."
-        # XXX looking for a pre-compiled file here will be quite essential
-        #     when we want to bootstrap the compiler
-        fullfn = os.path.join(AppFile.ROOTDIR, filename)
-        f = open(fullfn, 'r')
-        src = f.read()
-        f.close()
-        self.bytecode = compile(src, filename, 'exec')
-
-
-class Namespace:
-
-    def __init__(self, space):
-        self.space = space
-        ec = space.getexecutioncontext()
-        self.w_namespace = ec.make_standard_w_globals()
-
-    def get(self, objname):
-        "Returns a wrapped copy of an object by name."
-        w_name = self.space.wrap(objname)
-        w_obj = self.space.getitem(self.w_namespace, w_name)
-        return w_obj
-
-    def call(self, functionname, argumentslist):
-        "Call a module function."
-        w_function = self.get(functionname)
-        w_arguments = self.space.newtuple(argumentslist)
-        w_keywords = self.space.newdict([])
-        return self.space.apply(w_function, w_arguments, w_keywords)
-
-    def runbytecode(self, bytecode):
-        # initialize the module by running the bytecode in a new
-        # dictionary, in a new execution context
-        ec = self.space.getexecutioncontext()
-        frame = pyframe.PyFrame(self.space, bytecode,
-                                self.w_namespace, self.w_namespace)
-        ec.eval_frame(frame)
-
-
-class AppHelper(Namespace):
-
-    def __init__(self, space, bytecode):
-        Namespace.__init__(self, space)
-        self.runbytecode(bytecode)
-
-
 ##################################################################
+
+import executioncontext, pyframe
+
 
 class ObjSpace:
     """Base class for the interpreter-level implementations of object spaces.
@@ -133,4 +77,67 @@ class ObjSpace:
             self.appfile_helpers[applicationfile] = helper
         return helper
 
-    AppFile = AppFile   # make that class available for convenience
+    from appfile import AppFile   # make that class available for convenience
+
+
+## Table describing the regular part of the interface of object spaces,
+## namely all methods which only take w_ arguments and return a w_ result.
+
+ObjSpace.MethodTable = [
+# method name # symbol # number of arguments
+    ('type',            'type',     1),
+    ('checktype',       'type?',    2),
+    ('repr',            'repr',     1),
+    ('getattr',         'getattr',  2),
+    ('setattr',         'setattr',  3),
+    ('delattr',         'delattr',  2),
+    ('getitem',         'getitem',  2),
+    ('setitem',         'setitem',  3),
+    ('delitem',         'delitem',  2),
+    ('pos',             'unary+',   1),
+    ('neg',             'unary-',   1),
+    ('not_',            'not',      1),
+    ('invert',          '~',        1),
+    ('add',             '+',        2),
+    ('sub',             '-',        2),
+    ('mul',             '*',        2),
+    ('truediv',         '/',        2),
+    ('floordiv',        '//',       2),
+    ('div',             'div',      2),
+    ('mod',             '%',        2),
+    ('pow',             '**',       3),
+    ('lshift',          '<<',       2),
+    ('rshift',          '>>',       2),
+    ('and_',            '&',        2),
+    ('or_',             '|',        2),
+    ('xor',             '^',        2),
+    ('inplace_add',     '+=',       2),
+    ('inplace_sub',     '-=',       2),
+    ('inplace_mul',     '*=',       2),
+    ('inplace_truediv', '/=',       2),
+    ('inplace_floordiv','//=',      2),
+    ('inplace_div',     'div=',     2),
+    ('inplace_mod',     '%=',       2),
+    ('inplace_pow',     '**=',      2),
+    ('inplace_lshift',  '<<=',      2),
+    ('inplace_rshift',  '>>=',      2),
+    ('inplace_and',     '&=',       2),
+    ('inplace_or',      '|=',       2),
+    ('inplace_xor',     '^=',       2),
+    ('getiter',         'iter',     1),
+    ('iternext',        'next',     1),
+    ('call',            'call',     3),
+    ]
+
+## Irregular part of the interface:
+#
+#                        wrap(x) -> w_x
+#                    unwrap(w_x) -> x
+#                   is_true(w_x) -> True or False
+#          compare(w_x, w_y, op) -> w_result
+#       newtuple([w_1, w_2,...]) -> w_tuple
+#        newlist([w_1, w_2,...]) -> w_list
+# newdict([(w_key,w_value),...]) -> w_dict
+# newslice(w_start,w_stop,w_end) -> w_slice     (w_end may be a real None)
+#               newfunction(...) -> w_function
+#

@@ -122,7 +122,7 @@ def %(_name)s(self, *args):
     def newstring(self, asciilist):
         return ''.join([chr(ascii) for ascii in asciilist])
 
-    def apply(self, callable, args, kwds):
+    def call(self, callable, args, kwds):
         if isinstance(callable, types.FunctionType):
             bytecode = callable.func_code
             ec = self.getexecutioncontext()
@@ -133,8 +133,7 @@ def %(_name)s(self, *args):
             frame.setargs(args, kwds)
             return ec.eval_frame(frame)
         else:
-            import __builtin__
-            return __builtin__.apply(callable, args, kwds)
+            return apply(callable, args, kwds)
 
     # comparisons
     def in_(w1, w2):
@@ -172,6 +171,6 @@ def %(_name)s(self, *args):
         'exc match': exc_match,
         }
 
-    def richcompare(self, w1, w2, operation):
+    def compare(self, w1, w2, operation):
         fn = self.operation_by_name[operation]
         return fn(w1, w2)

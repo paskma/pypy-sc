@@ -1,9 +1,10 @@
 import dis, pyframe, baseobjspace
+from appfile import AppFile
 from baseobjspace import OperationError, NoValue
 
 
 # dynamically loaded application-space utilities
-appfile = baseobjspace.AppFile("interpreter/opcode_app.py")
+appfile = AppFile("interpreter/opcode_app.py")
 
 
 class unaryoperation:
@@ -386,7 +387,7 @@ def LOAD_GLOBAL(f, nameindex):
         # catch KeyErrors
         w_exc_class, w_exc_value = e.args
         w_KeyError = f.space.w_KeyError
-        w_match = f.space.richcompare(w_exc_class, w_KeyError, "exc match")
+        w_match = f.space.compare(w_exc_class, w_KeyError, "exc match")
         if not f.space.is_true(w_match):
             raise
         # we got a KeyError, now look in the built-ins
@@ -395,7 +396,7 @@ def LOAD_GLOBAL(f, nameindex):
         except OperationError, e:
             # catch KeyErrors again
             w_exc_class, w_exc_value = e.args
-            w_match = f.space.richcompare(w_exc_class, w_KeyError, "exc match")
+            w_match = f.space.compare(w_exc_class, w_KeyError, "exc match")
             if not f.space.is_true(w_match):
                 raise
             message = "global name '%s' is not defined" % varname
@@ -467,7 +468,7 @@ def COMPARE_OP(f, test):
     testname = testnames[test]
     w_2 = f.valuestack.pop()
     w_1 = f.valuestack.pop()
-    w_result = f.space.richcompare(w_1, w_2, testname)
+    w_result = f.space.compare(w_1, w_2, testname)
     f.valuestack.push(w_result)
 
 def IMPORT_NAME(f, nameindex):
@@ -560,7 +561,7 @@ def call_function_extra(f, oparg, with_varargs, with_varkw):
     if with_varkw:
         w_keywords  = f.space.gethelper(appfile).call("concatenate_keywords",
                                                       [w_keywords,  w_varkw])
-    w_result = f.space.apply(w_function, w_arguments, w_keywords)
+    w_result = f.space.call(w_function, w_arguments, w_keywords)
     f.valuestack.push(w_result)
 
 def CALL_FUNCTION(f, oparg):
