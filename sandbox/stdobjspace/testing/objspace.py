@@ -1,5 +1,3 @@
-print 'test right objspace'
-
 class FailedToImplement(Exception):
     def __init__(self,e):
         self.e = e
