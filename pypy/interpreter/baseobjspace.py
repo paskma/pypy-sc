@@ -11,9 +11,21 @@ class OperationError(Exception):
     Arguments are the object-space exception class and value."""
     
     def __str__(self):
-        "Convenience for displaying nicer error messages."
+        "Convenience for tracebacks."
         w_exc, w_value = self.args
         return '[%s: %s]' % (w_exc, w_value)
+    def nicetraceback(self, space):
+        "Dump a nice custom traceback to sys.stderr."
+        import sys, traceback
+        tb = sys.exc_info()[2]
+        w_exc, w_value = self.args
+        exc = space.unwrap(w_exc)
+        value = space.unwrap(w_value)
+        print >> sys.stderr, "*"*10, " OperationError ", "*"*10
+        traceback.print_tb(tb)
+        msg = traceback.format_exception_only(exc, value)
+        print >> sys.stderr, "[Application-level]", ''.join(msg).strip()
+        print >> sys.stderr, "*"*10
 
 
 class NoValue(Exception):
