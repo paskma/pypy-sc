@@ -208,9 +208,11 @@ class SApplicationException(StackUnroller):
             # push the exception to the value stack for inspection by the
             # exception handler (the code after the except:)
             w_exc_class, w_exc_value = self.args
+            # XXX trackback?
             frame.valuestack.push(w_exc_value)
             frame.valuestack.push(w_exc_class)
             frame.next_instr = block.handlerposition   # jump to the handler
+            frame.blockstack.push(NoExceptionInFinally())
             raise StopUnrolling
     def emptystack(self, frame):
         # propagate the exception to the caller
