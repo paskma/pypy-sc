@@ -1,25 +1,36 @@
 #!/usr/bin/env python
+import unittest
 import sys
 import os
+
+#Start HACK
+
+#######################################
+# Workaround to give the modules 
+# an "objectspace"
+#######################################
+
 import objspace
 thisdir = os.getcwd()
 syspath = sys.path
 sys.path.insert(0,thisdir)
 sys.path.append('..')
-import unittest
 
-os.chdir('..')
 
 #######################################
 # import the module you want to test
 # import yourmodule
 #######################################
 
+os.chdir('..')
 import floatobject as fl
+os.chdir(thisdir)
+
+# End HACK
 
 True,False = (1==1),(1==0)
 
-class floatTest(unittest.TestCase):
+class TestW_FloatObject(unittest.TestCase):
 
     def setUp(self):
         self.space = objspace.StdObjSpace
@@ -27,54 +38,54 @@ class floatTest(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def floatTest(self):
+    def test_float(self):
         f1 = fl.W_FloatObject(1.0)
         result = fl.float_float(self.space,f1)
         assert result == f1
 
-    def reprTest(self):
+    def test_repr(self):
         x = 1.0
         f1 = fl.W_FloatObject(x)
         result = fl.float_repr(self.space,f1)
         assert self.space.unwrap(result) == repr(x)
 
-    def strTest(self):
+    def test_str(self):
         x = 1.0
         f1 = fl.W_FloatObject(x)
         result = fl.float_str(self.space,f1)
         assert self.space.unwrap(result) == str(x)
 
-    def hashTest(self):
+    def test_hash(self):
         x = 1.0
         f1 = fl.W_FloatObject(x)
         result = fl.float_hash(self.space,f1)
         assert self.space.unwrap(result) == hash(x)
 
-    def addTest(self):
+    def test_add(self):
         f1 = fl.W_FloatObject(1.0)
         f2 = fl.W_FloatObject(2.0)
         result = fl.float_float_add(self.space,f1,f2)
         assert result.floatval == 3.0
 
-    def subTest(self):
+    def test_sub(self):
         f1 = fl.W_FloatObject(1.0)
         f2 = fl.W_FloatObject(2.0)
         result = fl.float_float_sub(self.space,f1,f2)
         assert result.floatval == -1.0
 
-    def mulTest(self):
+    def test_mul(self):
         f1 = fl.W_FloatObject(1.0)
         f2 = fl.W_FloatObject(2.0)
         result = fl.float_float_mul(self.space,f1,f2)
         assert result.floatval == 2.0
 
-    def divTest(self):
+    def test_div(self):
         f1 = fl.W_FloatObject(1.0)
         f2 = fl.W_FloatObject(2.0)
         result = fl.float_float_div(self.space,f1,f2)
         assert result.floatval == 0.5
 
-    def modTest(self):
+    def test_mod(self):
         x = 1.0
         y = 2.0
         f1 = fl.W_FloatObject(x)
@@ -82,7 +93,7 @@ class floatTest(unittest.TestCase):
         v = fl.float_float_mod(self.space,f1,f2)
         assert v.floatval == x % y
 
-    def divmodTest(self):
+    def test_divmod(self):
         x = 1.0
         y = 2.0
         f1 = fl.W_FloatObject(x)
@@ -91,7 +102,7 @@ class floatTest(unittest.TestCase):
         v,w = self.space.unwrap(wrappedTuple)
         assert (v.floatval,w.floatval) == divmod(x,y)
 
-    def powTest(self):
+    def test_pow(self):
         x = 1.0
         y = 2.0
         f1 = fl.W_FloatObject(x)
@@ -100,26 +111,5 @@ class floatTest(unittest.TestCase):
         assert v.floatval == x ** y
 
 
-def makeTestSuite():
-    suiteAtomic = unittest.TestSuite()
-    suiteAtomic.addTest(floatTest('floatTest'))
-    suiteAtomic.addTest(floatTest('reprTest'))
-    suiteAtomic.addTest(floatTest('strTest'))
-    suiteAtomic.addTest(floatTest('hashTest'))
-    suiteAtomic.addTest(floatTest('addTest'))
-    suiteAtomic.addTest(floatTest('subTest'))
-    suiteAtomic.addTest(floatTest('mulTest'))
-    suiteAtomic.addTest(floatTest('divTest'))
-    suiteAtomic.addTest(floatTest('modTest'))
-    suiteAtomic.addTest(floatTest('divmodTest'))
-    suiteAtomic.addTest(floatTest('powTest'))
-
-    return unittest.TestSuite((suiteAtomic,))
-
-def main():
-    unittest.main(defaultTest='makeTestSuite')
-    sys.path = syspath
-    os.chdir(thispath)
-
 if __name__ == '__main__':
-    main()
+    unittest.main()
