@@ -16,4 +16,7 @@ class PyPyConsole(code.InteractiveConsole):
                         self.locals, self.locals)
         self.ec.eval_frame(frame)
         
-        
+if __name__ == '__main__':
+    con = PyPyConsole()
+    con.interact()
+
