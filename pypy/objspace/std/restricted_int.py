@@ -22,34 +22,48 @@ class r_int(int):
     def __add__(self, other):
         x = int(self)
         y = int(other)
-        return r_int(x+y)
+        return r_int(x + y)
     __radd__ = __add__
     
     def __sub__(self, other):
         x = int(self)
         y = int(other)
-        return r_int(x-y)
-    __rsub__ = __sub__
+        return r_int(x - y)
+
+    def __rsub__(self, other):
+        y = int(self)
+        x = int(other)
+        return r_int(x - y)
     
     def __mul__(self, other):
         x = int(self)
         y = int(other)
-        return r_int(x*y)
+        return r_int(x * y)
     __rmul__ = __mul__
 
     def __div__(self, other):
         x = int(self)
         y = int(other)
-        return r_int(x//y)
-    __rdiv__ = __div__
+        return r_int(x // y)
 
-    __floordiv__ = __rfloordiv__ = __div__
+    __floordiv__ = __div__
+
+    def __rdiv__(self, other):
+        y = int(self)
+        x = int(other)
+        return r_int(x // y)
+
+    __rfloordiv__ = __rdiv__
 
     def __mod__(self, other):
         x = int(self)
         y = int(other)
         return r_int(x % y)
-    __rmod__ = __mod__
+
+    def __rmod__(self, other):
+        y = int(self)
+        x = int(other)
+        return r_int(x % y)
 
     def __divmod__(self, other):
         res = divmod(self, other)
@@ -61,13 +75,21 @@ class r_int(int):
         x = long(self)
         y = int(n)
         return r_int(x << y)
-    __rlshift__ = __lshift__
+
+    def __rlshift__(self, n):
+        y = long(self)
+        x = int(n)
+        return r_int(x << y)
 
     def __rshift__(self, n):
         x = int(self)
         y = int(n)
         return r_int(x >> y)
-    __rrshift__ = __rshift__
+
+    def __rrshift__(self, n):
+        y = int(self)
+        x = int(n)
+        return r_int(x >> y)
 
     def __or__(self, other):
         x = int(self)
@@ -100,9 +122,15 @@ class r_int(int):
 
     def __pow__(self, other, m=None):
         x = int(self)
-        res = pow(x, other, m)
+        y = int(other)
+        res = pow(x, y, m)
         return r_int(res)
-    __rpow__ = __pow__
+
+    def __rpow__(self, other, m=None):
+        y = int(self)
+        x = int(other)
+        res = pow(x, y, m)
+        return r_int(res)
 
 # set up of machine internals
 _bits = 0

@@ -36,8 +36,8 @@ class TestW_IntObject(unittest.TestCase):
         try:
             res = func(*args, **kwds)
             raise Exception, "should have failed but returned '%s'!" %repr(res)
-        except OperationError, arg:
-            return arg[0]
+        except OperationError, e:
+            return e.w_type
 
     def test_repr(self):
         x = 1
@@ -57,6 +57,25 @@ class TestW_IntObject(unittest.TestCase):
         result = iobj.int_hash(self.space, f1)
         self.assertEquals(result.intval, hash(x))
 
+    def test_compare(self):
+        import operator
+        optab = {
+            '<':  operator.lt,
+            '<=': operator.le,
+            '==': operator.eq,
+            '!=': operator.ne,
+            '>':  operator.gt,
+            '>=': operator.ge,
+        }
+        for x in (-10, -1, 0, 1, 2, 1000, sys.maxint):
+            for y in (-sys.maxint-1, -11, -9, -2, 0, 1, 3, 1111, sys.maxint):
+                for op in optab:
+                    wx = iobj.W_IntObject(x)
+                    wy = iobj.W_IntObject(y)
+                    res = optab[op](x, y)
+                    myres = iobj.int_int_compare(self.space, wx, wy, op)
+                    self.assertEquals(self.space.unwrap(myres), res)
+                    
     def test_add(self):
         x = 1
         y = 2
@@ -131,7 +150,7 @@ class TestW_IntObject(unittest.TestCase):
         f2 = iobj.W_IntObject(y)
         ret = iobj.int_int_divmod(self.space, f1, f2)
         v, w = self.space.unwrap(ret)
-        self.assertEquals((v.intval, w.intval), divmod(x, y))
+        self.assertEquals((v, w), divmod(x, y))
         x = -sys.maxint-1
         y = -1
         f1 = iobj.W_IntObject(x)

@@ -194,7 +194,7 @@ def int_int_divmod(space, w_int1, w_int2):
                                 space.wrap("integer modulo"))
     # no overflow possible
     m = x % y
-    return space.newtuple([W_IntObject(z), W_IntObject(m)])
+    return space.wrap((z,m))
 
 StdObjSpace.divmod.register(int_int_divmod, W_IntObject, W_IntObject)
 
