@@ -1,11 +1,4 @@
-import sys, operator
-
-
-# use the operator module as the trivial, wrapping-less,
-# exception-handling-less object space.
-operator.wrap = operator.unwrap = lambda x: x
-operator.type = type
-trivialspace = operator
+import sys
 
 
 class OperationError(Exception):
@@ -32,5 +25,5 @@ class AppFile:
 
     def call(self, space, functionname, argumentslist):
         w_function = self.findobject(space, functionname)
-        w_arguments = space.new_tuple(argumentslist)
+        w_arguments = space.newtuple(argumentslist)
         return space.apply(w_function, w_arguments)

@@ -1,4 +1,5 @@
 import dis, pypy, pyframe
+from pypy import OperationError
 
 
 # dynamically loaded application-space utilities
@@ -80,7 +81,7 @@ def DUP_TOP(f):
 def DUP_TOPX(f, itemcount):
     assert 1 <= itemcount <= 5, "limitation of the current interpreter"
     for i in range(itemcount):
-        v = f.valuestack.top(-itemcount)
+        v = f.valuestack.top(itemcount-1)
         f.valuestack.push(v)
 
 UNARY_POSITIVE = unaryoperation("pos")
@@ -114,12 +115,12 @@ INPLACE_ADD      = binaryoperation("inplace_add")
 INPLACE_SUBTRACT = binaryoperation("inplace_sub")
 INPLACE_LSHIFT   = binaryoperation("inplace_lshift")
 INPLACE_RSHIFT   = binaryoperation("inplace_rshift")
-INPLACE_AND = binaryoperation("inplace_and_")
+INPLACE_AND = binaryoperation("inplace_and")
 INPLACE_XOR = binaryoperation("inplace_xor")
-INPLACE_OR  = binaryoperation("inplace_or_")
+INPLACE_OR  = binaryoperation("inplace_or")
 
 def slice(f, v, w):
-    w_slice = f.space.new_slice(v, w, None)
+    w_slice = f.space.newslice(v, w, None)
     u = f.valuestack.pop()
     x = f.space.getitem(u, w_slice)
     f.push(x)
@@ -145,7 +146,7 @@ def SLICE_3(f):
     slice(f, v, w)
 
 def storeslice(f, v, w):
-    w_slice = f.space.new_slice(v, w, None)
+    w_slice = f.space.newslice(v, w, None)
     u = f.valuestack.pop()
     t = f.valuestack.pop()
     f.space.setitem(u, w_slice, t)
@@ -171,7 +172,7 @@ def STORE_SLICE_3(f):
     storeslice(f, v, w)
 
 def deleteslice(f, v, w):
-    w_slice = f.space.new_slice(v, w, None)
+    w_slice = f.space.newslice(v, w, None)
     u = f.valuestack.pop()
     f.space.delitem(u, w_slice)
 
@@ -229,10 +230,10 @@ def PRINT_NEWLINE(f):
     applicationfile.call(f.space, "print_newline", [])
 
 def BREAK_LOOP(f):
-    raise pyframe.BreakLoop
+    raise pyframe.SBreakLoop
 
 def CONTINUE_LOOP(f, startofloop):
-    raise pyframe.ContinueLoop(startofloop)
+    raise pyframe.SContinueLoop(startofloop)
 
 def RAISE_VARARGS(f, nbargs):
     if nbargs == 0:
@@ -256,12 +257,12 @@ def LOAD_LOCALS(f):
     f.valuestack.push(f.w_locals)
 
 def RETURN_VALUE(f):
-    v_returnvalue = f.valuestack.pop()
-    raise pyframe.ReturnValue(v_returnvalue)
+    w_returnvalue = f.valuestack.pop()
+    raise pyframe.SReturnValue(w_returnvalue)
 
 def YIELD_VALUE(f):
-    v_yieldedvalue = f.valuestack.pop()
-    raise pyframe.YieldValue(v_yieldedvalue)
+    w_yieldedvalue = f.valuestack.pop()
+    raise pyframe.SYieldValue(w_yieldedvalue)
 YIELD_STMT = YIELD_VALUE  # misnamed in dis.opname
 
 def EXEC_STMT(f):
@@ -425,19 +426,19 @@ def STORE_DEREF(f, varindex):
 def BUILD_TUPLE(f, itemcount):
     items = [f.valuestack.pop() for i in range(itemcount)]
     items.reverse()
-    x = f.space.new_tuple(items)
+    x = f.space.newtuple(items)
     f.valuestack.push(x)
 
 def BUILD_LIST(f, itemcount):
     items = [f.valuestack.pop() for i in range(itemcount)]
     items.reverse()
-    x = f.space.new_list(items)
+    x = f.space.newlist(items)
     f.valuestack.push(x)
 
 def BUILD_MAP(f, zero):
     if zero != 0:
         raise pyframe.BytecodeCorruption
-    x = f.space.new_dict([])
+    x = f.space.newdict([])
     f.valuestack.push(x)
 
 def LOAD_ATTR(f, nameindex):
@@ -510,8 +511,8 @@ def FOR_ITER(f, jumpby):
     else:
         f.valuestack.push(x)
 
-#def FOR_LOOP(f, oparg):
-#    removed
+def FOR_LOOP(f, oparg):
+    raise pyframe.BytecodeCorruption, "old opcode, no longer in use"
 
 def SETUP_LOOP(f, offsettoend):
     block = pyframe.LoopBlock(f, f.next_instr + offsettoend)
@@ -540,8 +541,8 @@ def call_function_extra(f, oparg, with_varargs, with_varkw):
     arguments = [f.valuestack.pop() for i in range(n_arguments)]
     arguments.reverse()
     w_function  = f.valuestack.pop()
-    w_arguments = f.space.new_tuple(arguments)
-    w_keywords  = f.space.new_dict(keywords)
+    w_arguments = f.space.newtuple(arguments)
+    w_keywords  = f.space.newdict(keywords)
     if with_varargs:
         w_arguments = applicationfile.call(f.space, "concatenate_arguments",
                                            [w_arguments, w_varargs])
@@ -567,8 +568,8 @@ def MAKE_FUNCTION(f, numdefaults):
     w_codeobj = f.valuestack.pop()
     defaultarguments = [f.valuestack.pop() for i in range(numdefaults)]
     defaultarguments.reverse()
-    w_defaultarguments = f.space.new_tuple(defaultarguments)
-    x = f.space.new_function(w_codeobj, w_defaultarguments)
+    w_defaultarguments = f.space.newtuple(defaultarguments)
+    x = f.space.newfunction(w_codeobj, f.w_globals, w_defaultarguments)
     f.valuestack.push(x)
 
 def MAKE_CLOSURE(f, numdefaults):
@@ -577,11 +578,12 @@ def MAKE_CLOSURE(f, numdefaults):
     nfreevars = len(codeobj.co_freevars)
     freevars = [f.valuestack.pop() for i in range(nfreevars)]
     freevars.reverse()
-    w_freevars = f.space.new_tuple(freevars)
+    w_freevars = f.space.newtuple(freevars)
     defaultarguments = [f.valuestack.pop() for i in range(numdefaults)]
     defaultarguments.reverse()
-    w_defaultarguments = f.space.new_tuple(defaultarguments)
-    x = f.space.new_function(w_codeobj, w_defaultarguments, w_freevars)
+    w_defaultarguments = f.space.newtuple(defaultarguments)
+    x = f.space.newfunction(w_codeobj, f.w_globals, w_defaultarguments,
+                            w_freevars)
     f.valuestack.push(x)
 
 def BUILD_SLICE(f, numargs):
@@ -593,7 +595,7 @@ def BUILD_SLICE(f, numargs):
         raise pyframe.BytecodeCorruption
     v = f.valuestack.pop()
     u = f.valuestack.pop()
-    x = f.space.new_slice(u, v, w)
+    x = f.space.newslice(u, v, w)
     f.valuestack.push(x)
 
 def SET_LINENO(f, lineno):
@@ -604,16 +606,25 @@ def EXTENDED_ARG(f, oparg):
     oparg = oparg<<16 | f.nextarg()
     dispatch_arg(f, oparg)
 
+def MISSING_OPCODE(f, oparg=None):
+    raise pyframe.BytecodeCorruption, "unknown opcode"
+
 
 ################################################################
 
-dispatch_table = {}
+dispatch_table = []
 for i in range(256):
     opname = dis.opname[i].replace('+', '_')
+    fn = MISSING_OPCODE
     if opname in globals():
-        dispatch_table[i] = globals()[opname]
+        fn = globals()[opname]
     elif not opname.startswith('<') and i>0:
         print "* Warning, missing opcode %s" % opname
+    dispatch_table.append(fn)
+
+
+def has_arg(opcode):
+    return opcode >= dis.HAVE_ARGUMENT
 
 def dispatch_noarg(f, opcode):
     try:
