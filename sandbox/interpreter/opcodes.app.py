@@ -2,7 +2,7 @@ import sys
 
 
 def print_expr(x):
-    try: 
+    try:
         displayhook = sys.displayhook
     except AttributeError:
         raise RuntimeError, "lost sys.displayhook"
@@ -42,37 +42,37 @@ def print_newline():
         raise RuntimeError, "lost sys.stdout"
     print_newline_to(stream)
 
-#CHECK
 def import_name(builtins, modulename, globals, locals, fromlist):
     try:
-	import_ = builtins["__import__"]
+        import_ = builtins["__import__"]
     except KeyError:
-	raise ImportError, "__import__ not found"
-    import_(modulname, globals, locals, fromlist)
-	
-#CHECK
+        raise ImportError, "__import__ not found"
+    import_(modulename, globals, locals, fromlist)
+
 def import_all_from(module, locals):
     try:
-	all=module.__all__ 
+        all = module.__all__
     except AttributeError:
-	try:
-	    dict=module.__dict__
-	    all=dict.keys()
-	    skip_leading_underscores = True
-	except AttributeError:
-	    raise ImportError, "from-import-* object has no __dict__ and no __all__"
+        try:
+            dict = module.__dict__
+        except AttributeError:
+            raise ImportError, ("from-import-* object has no __dict__ "
+                                "and no __all__")
+        all = dict.keys()
+        skip_leading_underscores = True
+    else:
+        skip_leading_underscores = False
     for name in all:
-	if skip_leading_underscores and name[0]=='_':
-	    continue
-		locals[name]=module.__getattr(name)
-		
-#CHECK
+        if skip_leading_underscores and name[0]=='_':
+            continue
+        locals[name] = getattr(module, name)
+
 def import_from(module, name):
     try:
-	return module.name
+        return getattr(module, name)
     except AttributeError:
-	raise ImportError, "cannot import name '%s'" % name
-		
+        raise ImportError, "cannot import name '%s'" % name
+
 def load_name(name, locals, globals, builtins):
     try:
         return locals[name]

@@ -33,56 +33,56 @@ class binaryoperation:
 def LOAD_FAST(f, varindex):
     varname = f.getlocalvarname(varindex)
     w_varname = f.space.wrap(varname)
-    x = f.space.getitem(f.w_locals, w_varname)
+    w_value = f.space.getitem(f.w_locals, w_varname)
     # XXX catch KeyError and make it a NameError
-    f.valuestack.push(x)
+    f.valuestack.push(w_value)
 
 def LOAD_CONST(f, constindex):
-    x = f.getconstant(constindex)
-    f.valuestack.push(x)
+    w_const = f.getconstant(constindex)
+    f.valuestack.push(w_const)
 
 def STORE_FAST(f, varindex):
     varname = f.getlocalvarname(varindex)
     w_varname = f.space.wrap(varname)
-    v = f.valuestack.pop()
-    f.space.setitem(f.w_locals, w_varname, v)
+    w_value = f.valuestack.pop()
+    f.space.setitem(f.w_locals, w_varname, w_value)
 
 def POP_TOP(f):
     f.valuestack.pop()
 
 def ROT_TWO(f):
-    v = f.valuestack.pop()
-    w = f.valuestack.pop()
-    f.valuestack.push(v)
-    f.valuestack.push(w)
+    w_1 = f.valuestack.pop()
+    w_2 = f.valuestack.pop()
+    f.valuestack.push(w_1)
+    f.valuestack.push(w_2)
 
 def ROT_THREE(f):
-    v = f.valuestack.pop()
-    w = f.valuestack.pop()
-    x = f.valuestack.pop()
-    f.valuestack.push(v)
-    f.valuestack.push(x)
-    f.valuestack.push(w)
+    w_1 = f.valuestack.pop()
+    w_2 = f.valuestack.pop()
+    w_3 = f.valuestack.pop()
+    f.valuestack.push(w_1)
+    f.valuestack.push(w_3)
+    f.valuestack.push(w_2)
 
 def ROT_FOUR(f):
-    u = f.valuestack.pop()
-    v = f.valuestack.pop()
-    w = f.valuestack.pop()
-    x = f.valuestack.pop()
-    f.valuestack.push(u)
-    f.valuestack.push(x)
-    f.valuestack.push(w)
-    f.valuestack.push(v)
+    w_1 = f.valuestack.pop()
+    w_2 = f.valuestack.pop()
+    w_3 = f.valuestack.pop()
+    w_4 = f.valuestack.pop()
+    f.valuestack.push(w_1)
+    f.valuestack.push(w_4)
+    f.valuestack.push(w_3)
+    f.valuestack.push(w_2)
 
 def DUP_TOP(f):
-    v = f.valuestack.top()
-    f.valuestack.push(v)
+    w_1 = f.valuestack.top()
+    f.valuestack.push(w_1)
 
 def DUP_TOPX(f, itemcount):
     assert 1 <= itemcount <= 5, "limitation of the current interpreter"
     for i in range(itemcount):
-        v = f.valuestack.top(itemcount-1)
-        f.valuestack.push(v)
+        w_1 = f.valuestack.top(itemcount-1)
+        f.valuestack.push(w_1)
 
 UNARY_POSITIVE = unaryoperation("pos")
 UNARY_NEGATIVE = unaryoperation("neg")
@@ -119,108 +119,96 @@ INPLACE_AND = binaryoperation("inplace_and")
 INPLACE_XOR = binaryoperation("inplace_xor")
 INPLACE_OR  = binaryoperation("inplace_or")
 
-def slice(f, v, w):
-    w_slice = f.space.newslice(v, w, None)
-    u = f.valuestack.pop()
-    x = f.space.getitem(u, w_slice)
-    f.push(x)
+def slice(f, w_start, w_end):
+    w_slice = f.space.newslice(w_start, w_end, None)
+    w_obj = f.valuestack.pop()
+    w_result = f.space.getitem(w_obj, w_slice)
+    f.push(w_result)
 
 def SLICE_0(f):
-    w = None
-    v = None
-    slice(f, v, w)
+    slice(f, None, None)
 
 def SLICE_1(f):
-    w = None
-    v = f.valuestack.pop()
-    slice(f, v, w)
+    w_start = f.valuestack.pop()
+    slice(f, w_start, None)
 
 def SLICE_2(f):
-    w = f.valuestack.pop()
-    v = None
-    slice(f, v, w)
+    w_end = f.valuestack.pop()
+    slice(f, None, w_end)
 
 def SLICE_3(f):
-    w = f.valuestack.pop()
-    v = f.valuestack.pop()
-    slice(f, v, w)
+    w_end = f.valuestack.pop()
+    w_start = f.valuestack.pop()
+    slice(f, w_start, w_end)
 
-def storeslice(f, v, w):
-    w_slice = f.space.newslice(v, w, None)
-    u = f.valuestack.pop()
-    t = f.valuestack.pop()
-    f.space.setitem(u, w_slice, t)
+def storeslice(f, w_start, w_end):
+    w_slice = f.space.newslice(w_start, w_end, None)
+    w_obj = f.valuestack.pop()
+    w_newvalue = f.valuestack.pop()
+    f.space.setitem(w_obj, w_slice, w_newvalue)
 
 def STORE_SLICE_0(f):
-    w = None
-    v = None
-    storeslice(f, v, w)
+    storeslice(f, None, None)
 
 def STORE_SLICE_1(f):
-    w = None
-    v = f.valuestack.pop()
-    storeslice(f, v, w)
+    w_start = f.valuestack.pop()
+    storeslice(f, w_start, None)
 
 def STORE_SLICE_2(f):
-    w = f.valuestack.pop()
-    v = None
-    storeslice(f, v, w)
+    w_end = f.valuestack.pop()
+    storeslice(f, None, w_end)
 
 def STORE_SLICE_3(f):
-    w = f.valuestack.pop()
-    v = f.valuestack.pop()
-    storeslice(f, v, w)
+    w_end = f.valuestack.pop()
+    w_start = f.valuestack.pop()
+    storeslice(f, w_start, w_end)
 
-def deleteslice(f, v, w):
-    w_slice = f.space.newslice(v, w, None)
-    u = f.valuestack.pop()
-    f.space.delitem(u, w_slice)
+def deleteslice(f, w_start, w_end):
+    w_slice = f.space.newslice(w_start, w_end, None)
+    w_obj = f.valuestack.pop()
+    f.space.delitem(w_obj, w_slice)
 
 def DELETE_SLICE_0(f):
-    w = None
-    v = None
-    deleteslice(f, v, w)
+    deleteslice(f, None, None)
 
 def DELETE_SLICE_1(f):
-    w = None
-    v = f.valuestack.pop()
-    deleteslice(f, v, w)
+    w_start = f.valuestack.pop()
+    deleteslice(f, w_start, None)
 
 def DELETE_SLICE_2(f):
-    w = f.valuestack.pop()
-    v = None
-    deleteslice(f, v, w)
+    w_end = f.valuestack.pop()
+    deleteslice(f, None, w_end)
 
 def DELETE_SLICE_3(f):
-    w = f.valuestack.pop()
-    v = f.valuestack.pop()
-    deleteslice(f, v, w)
+    w_end = f.valuestack.pop()
+    w_start = f.valuestack.pop()
+    deleteslice(f, w_start, w_end)
 
 def STORE_SUBSCR(f):
-    "v[w] = u"
-    w = f.valuestack.pop()
-    v = f.valuestack.pop()
-    u = f.valuestack.pop()
-    f.space.setitem(v, w, u)
+    "obj[subscr] = newvalue"
+    w_subscr = f.valuestack.pop()
+    w_obj = f.valuestack.pop()
+    w_newvalue = f.valuestack.pop()
+    f.space.setitem(w_obj, w_subscr, w_newvalue)
 
 def DELETE_SUBSCR(f):
-    "del v[w]"
-    w = f.valuestack.pop()
-    v = f.valuestack.pop()
-    f.space.delitem(v, w)
+    "del obj[subscr]"
+    w_subscr = f.valuestack.pop()
+    w_obj = f.valuestack.pop()
+    f.space.delitem(w_obj, w_subscr)
 
 def PRINT_EXPR(f):
-    v = f.valuestack.pop()
-    applicationfile.call(f.space, "print_expr", [v])
+    w_expr = f.valuestack.pop()
+    applicationfile.call(f.space, "print_expr", [w_expr])
 
 def PRINT_ITEM_TO(f):
     w_stream = f.valuestack.pop()
-    v = f.valuestack.pop()
-    applicationfile.call(f.space, "print_item_to", [v, w_stream])
+    w_item = f.valuestack.pop()
+    applicationfile.call(f.space, "print_item_to", [w_item, w_stream])
 
 def PRINT_ITEM(f):
-    v = f.valuestack.pop()
-    applicationfile.call(f.space, "print_item", [v])
+    w_item = f.valuestack.pop()
+    applicationfile.call(f.space, "print_item", [w_item])
 
 def PRINT_NEWLINE_TO(f):
     w_stream = f.valuestack.pop()
@@ -239,17 +227,17 @@ def RAISE_VARARGS(f, nbargs):
     if nbargs == 0:
         applicationfile.call(f.space, "raise0")
     elif nbargs == 1:
-        w = f.valuestack.pop()
-        applicationfile.call(f.space, "raise1", [w])
+        w_exc = f.valuestack.pop()
+        applicationfile.call(f.space, "raise1", [w_exc])
     elif nbargs == 2:
-        v = f.valuestack.pop()
-        w = f.valuestack.pop()
-        applicationfile.call(f.space, "raise2", [v, w])
+        w_exc   = f.valuestack.pop()
+        w_value = f.valuestack.pop()
+        applicationfile.call(f.space, "raise2", [w_exc, w_value])
     elif nbargs == 3:
-        u = f.valuestack.pop()
-        v = f.valuestack.pop()
-        w = f.valuestack.pop()
-        applicationfile.call(f.space, "raise3", [u, v, w])
+        w_exc       = f.valuestack.pop()
+        w_value     = f.valuestack.pop()
+        w_traceback = f.valuestack.pop()
+        applicationfile.call(f.space, "raise3", [w_exc, w_value, w_traceback])
     else:
         raise pyframe.BytecodeCorruption
 
@@ -266,10 +254,12 @@ def YIELD_VALUE(f):
 YIELD_STMT = YIELD_VALUE  # misnamed in dis.opname
 
 def EXEC_STMT(f):
-    w = f.valuestack.pop()
-    v = f.valuestack.pop()
-    u = f.valuestack.pop()
-    NotImplementedYet  # XXX
+    w_locals  = f.valuestack.pop()
+    w_globals = f.valuestack.pop()
+    w_prog    = f.valuestack.pop()
+    applicationfile.call(f.space, "exec_statement",
+                         [w_prog, w_globals, w_locals,
+                          f.w_builtins, f.w_globals, f.w_locals])
 
 def POP_BLOCK(f):
     block = f.blockstack.pop()
@@ -285,17 +275,18 @@ def END_FINALLY(f):
     block.cleanup(f)
 
 def BUILD_CLASS(f):
-    u = f.valuestack.pop()
-    v = f.valuestack.pop()
-    w = f.valuestack.pop()
-    x = applicationfile.call(f.space, "build_class", [u, v, w])
-    f.push(x)
+    w_methodsdict = f.valuestack.pop()
+    w_bases       = f.valuestack.pop()
+    w_name        = f.valuestack.pop()
+    w_newclass = applicationfile.call(f.space, "build_class",
+                                      [w_methodsdict, w_bases, w_name])
+    f.push(w_newclass)
 
 def STORE_NAME(f, varindex):
     varname = f.getname(varindex)
     w_varname = f.space.wrap(varname)
-    v = f.valuestack.pop()
-    f.space.setitem(f.w_locals, w_varname, v)
+    w_newvalue = f.valuestack.pop()
+    f.space.setitem(f.w_locals, w_varname, w_newvalue)
 
 def DELETE_NAME(f, varindex):
     varname = f.getname(varindex)
@@ -304,8 +295,8 @@ def DELETE_NAME(f, varindex):
     # XXX catch KeyError and make it a NameError
 
 def UNPACK_SEQUENCE(f, itemcount):
-    v = f.valuestack.pop()
-    w_iterator = f.space.getiter(v)
+    w_iterable = f.valuestack.pop()
+    w_iterator = f.space.getiter(w_iterable)
     items = []
     for i in range(itemcount):
         try:
@@ -334,25 +325,25 @@ def UNPACK_SEQUENCE(f, itemcount):
         f.valuestack.push(item)
 
 def STORE_ATTR(f, nameindex):
-    "v.attributename = u"
+    "obj.attributename = newvalue"
     attributename = f.getname(nameindex)
     w_attributename = f.space.wrap(attributename)
-    v = f.valuestack.pop()
-    u = f.valuestack.pop()
-    f.space.setattr(v, w_attributename, u)
+    w_obj = f.valuestack.pop()
+    w_newvalue = f.valuestack.pop()
+    f.space.setattr(w_obj, w_attributename, w_newvalue)
 
 def DELETE_ATTR(f, nameindex):
-    "del v.attributename"
+    "del obj.attributename"
     attributename = f.getname(nameindex)
     w_attributename = f.space.wrap(attributename)
-    v = f.valuestack.pop()
-    f.space.delattr(v, w_attributename)
+    w_obj = f.valuestack.pop()
+    f.space.delattr(w_obj, w_attributename)
 
 def STORE_GLOBAL(f, nameindex):
     varname = f.getname(nameindex)
     w_varname = f.space.wrap(varname)
-    v = f.valuestack.pop()
-    f.space.setitem(f.w_globals, w_varname, v)
+    w_newvalue = f.valuestack.pop()
+    f.space.setitem(f.w_globals, w_varname, w_newvalue)
 
 def DELETE_GLOBAL(f, nameindex):
     varname = f.getname(nameindex)
@@ -362,15 +353,15 @@ def DELETE_GLOBAL(f, nameindex):
 def LOAD_NAME(f, nameindex):
     varname = f.getname(nameindex)
     w_varname = f.space.wrap(varname)
-    x = applicationfile.call(f.space, "load_name",
-                             [w_varname, f.w_locals, f.w_globals, f.w_builtins])
-    f.valuestack.push(x)
+    w_value = applicationfile.call(f.space, "load_name", [w_varname,
+                                   f.w_locals, f.w_globals, f.w_builtins])
+    f.valuestack.push(w_value)
 
 def LOAD_GLOBAL(f, nameindex):
     varname = f.getname(nameindex)
     w_varname = f.space.wrap(varname)
     try:
-        x = f.space.getitem(f.w_globals, w_varname)
+        w_value = f.space.getitem(f.w_globals, w_varname)
     except OperationError, e:
         # catch KeyErrors
         w_exc_class, w_exc_value = e.args
@@ -380,7 +371,7 @@ def LOAD_GLOBAL(f, nameindex):
             raise
         # we got a KeyError, now look in the built-ins
         try:
-            x = f.space.getitem(f.w_builtins, w_varname)
+            w_value = f.space.getitem(f.w_builtins, w_varname)
         except OperationError, e:
             # catch KeyErrors again
             w_exc_class, w_exc_value = e.args
@@ -391,7 +382,7 @@ def LOAD_GLOBAL(f, nameindex):
             w_exc_class = applicationfile.findobject(f.space, "NameError")
             w_exc_value = f.space.wrap(message)
             raise OperationError(w_exc_class, w_exc_value)
-    f.valuestack.push(x)
+    f.valuestack.push(w_value)
 
 def DELETE_FAST(f, varindex):
     varname = f.getlocalvarname(varindex)
@@ -405,67 +396,68 @@ def LOAD_CLOSURE(f, varindex):
     #     syntactically nested frames?
     varname = f.getfreevarname(varindex)
     w_varname = f.space.wrap(varname)
-    x = applicationfile.call(f.space, "load_closure", [f.w_locals, w_varname])
-    f.valuestack.push(x)
+    w_value = applicationfile.call(f.space, "load_closure",
+                                   [f.w_locals, w_varname])
+    f.valuestack.push(w_value)
 
 def LOAD_DEREF(f, varindex):
     # nested scopes: access a variable through its cell object
     varname = f.getfreevarname(varindex)
     w_varname = f.space.wrap(varname)
-    x = f.space.getitem(f.w_locals, w_varname)
+    w_value = f.space.getitem(f.w_locals, w_varname)
     # XXX catch KeyError and make it a NameError
-    f.valuestack.push(x)
+    f.valuestack.push(w_value)
 
 def STORE_DEREF(f, varindex):
     # nested scopes: access a variable through its cell object
     varname = f.getfreevarname(varindex)
     w_varname = f.space.wrap(varname)
-    v = f.valuestack.pop()
-    f.space.setitem(f.w_locals, w_varname, v)
+    w_newvalue = f.valuestack.pop()
+    f.space.setitem(f.w_locals, w_varname, w_newvalue)
 
 def BUILD_TUPLE(f, itemcount):
     items = [f.valuestack.pop() for i in range(itemcount)]
     items.reverse()
-    x = f.space.newtuple(items)
-    f.valuestack.push(x)
+    w_tuple = f.space.newtuple(items)
+    f.valuestack.push(w_tuple)
 
 def BUILD_LIST(f, itemcount):
     items = [f.valuestack.pop() for i in range(itemcount)]
     items.reverse()
-    x = f.space.newlist(items)
-    f.valuestack.push(x)
+    w_list = f.space.newlist(items)
+    f.valuestack.push(w_list)
 
 def BUILD_MAP(f, zero):
     if zero != 0:
         raise pyframe.BytecodeCorruption
-    x = f.space.newdict([])
-    f.valuestack.push(x)
+    w_dict = f.space.newdict([])
+    f.valuestack.push(w_dict)
 
 def LOAD_ATTR(f, nameindex):
-    "v.attributename"
+    "obj.attributename"
     attributename = f.getname(nameindex)
     w_attributename = f.space.wrap(attributename)
-    v = f.valuestack.pop()
-    x = f.space.getattr(v, w_attributename)
-    f.valuestack.push(x)
+    w_obj = f.valuestack.pop()
+    w_value = f.space.getattr(w_obj, w_attributename)
+    f.valuestack.push(w_value)
 
 def COMPARE_OP(f, test):
     testnames = ["<", "<=", "==", "!=", ">", ">=",
                  "in", "not in", "is", "is not", "exc match"]
     testname = testnames[test]
-    w = f.valuestack.pop()
-    v = f.valuestack.pop()
-    x = f.space.richcompare(v, w, testname)
-    f.valuestack.push(x)
+    w_2 = f.valuestack.pop()
+    w_1 = f.valuestack.pop()
+    w_result = f.space.richcompare(w_1, w_2, testname)
+    f.valuestack.push(w_result)
 
 def IMPORT_NAME(f, nameindex):
     modulename = f.getname(nameindex)
     w_modulename = f.space.wrap(modulename)
     w_fromlist = f.valuestack.pop()
-    x = applicationfile.call(f.space, "import_name",
-                             [f.w_builtins, w_modulename, f.w_globals,
-                              f.w_locals, w_fromlist])
-    f.valuestack.push(x)
+    w_obj = applicationfile.call(f.space, "import_name",
+                                 [f.w_builtins, w_modulename, f.w_globals,
+                                  f.w_locals, w_fromlist])
+    f.valuestack.push(w_obj)
 
 def IMPORT_STAR(f):
     w_module = f.valuestack.pop()
@@ -476,40 +468,40 @@ def IMPORT_FROM(f, nameindex):
     name = f.getname(nameindex)
     w_name = f.space.wrap(name)
     w_module = f.valuestack.top()
-    x = applicationfile.call(f.space, "import_from", [w_module, w_name])
-    f.valuestack.push(x)
+    w_obj = applicationfile.call(f.space, "import_from", [w_module, w_name])
+    f.valuestack.push(w_obj)
 
 def JUMP_FORWARD(f, stepby):
     f.next_instr += stepby
 
 def JUMP_IF_FALSE(f, stepby):
-    v = f.valuestack.top()
-    if not f.space.is_true(v):
+    w_cond = f.valuestack.top()
+    if not f.space.is_true(w_cond):
         f.next_instr += stepby
 
 def JUMP_IF_TRUE(f, stepby):
-    v = f.valuestack.top()
-    if f.space.is_true(v):
+    w_cond = f.valuestack.top()
+    if f.space.is_true(w_cond):
         f.next_instr += stepby
 
 def JUMP_ABSOLUTE(f, jumpto):
     f.next_instr = jumpto
 
 def GET_ITER(f):
-    v = f.valuestack.pop()
-    x = f.space.getiter(v)
-    f.valuestack.push(x)
+    w_iterable = f.valuestack.pop()
+    w_iterator = f.space.getiter(w_iterable)
+    f.valuestack.push(w_iterator)
 
 def FOR_ITER(f, jumpby):
     w_iterator = f.valuestack.top()
     try:
-        x = f.space.iternext(w_iterator)
+        w_nextitem = f.space.iternext(w_iterator)
     except pypy.NoValue:
         # iterator exhausted
         f.valuestack.pop()
         f.next_instr += jumpby
     else:
-        f.valuestack.push(x)
+        f.valuestack.push(w_nextitem)
 
 def FOR_LOOP(f, oparg):
     raise pyframe.BytecodeCorruption, "old opcode, no longer in use"
@@ -549,8 +541,8 @@ def call_function_extra(f, oparg, with_varargs, with_varkw):
     if with_kwargs:
         w_keywords  = applicationfile.call(f.space, "concatenate_keywords",
                                            [w_keywords,  w_varkw])
-    x = f.space.apply(w_function, w_arguments, w_keywords)
-    f.valuestack.push(x)
+    w_result = f.space.apply(w_function, w_arguments, w_keywords)
+    f.valuestack.push(w_result)
 
 def CALL_FUNCTION(f, oparg):
     call_function_extra(f, oparg, False, False)
@@ -569,8 +561,8 @@ def MAKE_FUNCTION(f, numdefaults):
     defaultarguments = [f.valuestack.pop() for i in range(numdefaults)]
     defaultarguments.reverse()
     w_defaultarguments = f.space.newtuple(defaultarguments)
-    x = f.space.newfunction(w_codeobj, f.w_globals, w_defaultarguments)
-    f.valuestack.push(x)
+    w_func = f.space.newfunction(w_codeobj, f.w_globals, w_defaultarguments)
+    f.valuestack.push(w_func)
 
 def MAKE_CLOSURE(f, numdefaults):
     w_codeobj = f.valuestack.pop()
@@ -582,21 +574,21 @@ def MAKE_CLOSURE(f, numdefaults):
     defaultarguments = [f.valuestack.pop() for i in range(numdefaults)]
     defaultarguments.reverse()
     w_defaultarguments = f.space.newtuple(defaultarguments)
-    x = f.space.newfunction(w_codeobj, f.w_globals, w_defaultarguments,
-                            w_freevars)
-    f.valuestack.push(x)
+    w_func = f.space.newfunction(w_codeobj, f.w_globals, w_defaultarguments,
+                                 w_freevars)
+    f.valuestack.push(w_func)
 
 def BUILD_SLICE(f, numargs):
     if numargs == 3:
-        w = f.valuestack.pop()
+        w_step = f.valuestack.pop()
     elif numargs == 2:
-        w = None
+        w_step = None
     else:
         raise pyframe.BytecodeCorruption
-    v = f.valuestack.pop()
-    u = f.valuestack.pop()
-    x = f.space.newslice(u, v, w)
-    f.valuestack.push(x)
+    w_end   = f.valuestack.pop()
+    w_start = f.valuestack.pop()
+    w_slice = f.space.newslice(w_start, w_end, w_step)
+    f.valuestack.push(w_slice)
 
 def SET_LINENO(f, lineno):
     pass
