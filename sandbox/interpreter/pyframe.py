@@ -27,7 +27,7 @@ class PyFrame:
         self.blockstack = Stack()
         self.next_instr = 0
 
-    def eval(self):
+    def eval(self, executioncontext):
         "Interpreter main loop!"
         try:
             while 1:
@@ -42,8 +42,7 @@ class PyFrame:
                             opcodes.dispatch_noarg(self, opcode)
 
                     except objectspace.OperationError, e:
-                        import traceback
-                        print traceback.print_exc()
+                        executioncontext.exception_trace(e)
                         # convert an OperationError into a reason to unroll
                         # the stack
                         w_exc_class, w_exc_value = e.args
@@ -218,6 +217,7 @@ class SApplicationException(StackUnroller):
     def emptystack(self, frame):
         # propagate the exception to the caller
         w_exc_class, w_exc_value = self.args
+        STOPSTOPSTOP
         # XXX traceback?
         raise objectspace.OperationError(w_exc_class, w_exc_value)
 
