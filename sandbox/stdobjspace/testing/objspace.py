@@ -1,8 +1,7 @@
 import new
 
 class FailedToImplement(Exception):
-    def __init__(self,e):
-        self.e = e
+    pass
 
 class FakeRegister:
     def register(self,*argl,**argv):

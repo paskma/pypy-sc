@@ -11,7 +11,7 @@ class r_int(int):
     def __sub__(self, other):
         x = int(self)
         y = int(other)
-        return r_int(x+y)
+        return r_int(x-y)
     __rsub__ = __sub__
     
     def __mul__(self, other):

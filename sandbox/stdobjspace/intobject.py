@@ -60,7 +60,13 @@ print
 def int_repr(space, w_int1):
     a = w_int1.intval
     res = "%ld" % a
-    return space.wrap(a)
+    return space.wrap(res)
+
+StdObjSpace.repr.register(int_repr, W_IntObject)
+
+int_str = int_repr
+
+StdObjSpace.str.register(int_str, W_IntObject)
 
 def int_int_cmp(space, w_int1, w_int2):
     i = w_int1.intval
@@ -83,7 +89,7 @@ def int_hash(space, w_int1):
         x = -2
     return W_IntObject(x)
 
-StdObjSpace.hash.register(int_hash, W_IntObject, W_IntObject)
+StdObjSpace.hash.register(int_hash, W_IntObject)
 
 def int_int_add(space, w_int1, w_int2):
     x = w_int1.intval
@@ -240,7 +246,7 @@ def _impl_int_int_pow(iv, iw, iz=None):
         except OverflowError:
             raise FailedToImplement(space.w_OverflowError,
                                     space.wrap("integer exponentiation"))
-    return W_IntObject(ix)
+    return ix
 
 def int_int_int_pow(space, w_int1, w_int2, w_int3):
     x = w_int1.intval
@@ -301,21 +307,6 @@ def int_invert(space, w_int1):
 
 StdObjSpace.invert.register(int_invert, W_IntObject)
 
-# helper for warning
-# it either does nothing since warning must be implemented,
-# 
-
-def _warn_or_raise_lshift():
-    if WARN_SHIFT:
-        pass  # dunno how to warn
-        #if (PyErr_Warn(PyExc_FutureWarning,
-        #           "x<<y losing bits or changing sign "
-        #           "will return a long in Python 2.4 and up") < 0)
-    else:
-        # we want to coerce to long
-        raise FailedToImplement(space.w_OverflowError,
-                                space.wrap("integer left shift"))
-        
 def int_int_lshift(space, w_int1, w_int2):
     a = w_int1.intval
     b = w_int2.intval
@@ -325,8 +316,8 @@ def int_int_lshift(space, w_int1, w_int2):
     if a == 0 or b == 0:
         return int_pos(w_int1)
     if b >= LONG_BIT:
-        _warn_or_raise_lshift()
-        return W_IntObject(0)
+        raise FailedToImplement(space.w_OverflowError,
+                                space.wrap("integer left shift"))
     ##
     ## XXX please! have a look into pyport.h and see how to implement
     ## the overflow checking, using macro Py_ARITHMETIC_RIGHT_SHIFT
@@ -339,8 +330,8 @@ def int_int_lshift(space, w_int1, w_int2):
         ##     if (PyErr_Warn(PyExc_FutureWarning,
         # and so on
     except OverflowError:
-        _warn_or_raise_lshift()
-        return W_IntObject(0)
+        raise FailedToImplement(space.w_OverflowError,
+                                space.wrap("integer left shift"))
     return W_IntObject(c);
 
 StdObjSpace.lshift.register(int_int_lshift, W_IntObject, W_IntObject)
