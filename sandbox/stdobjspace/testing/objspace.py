@@ -14,6 +14,7 @@ class CallWrapper:
 
     def call(self,space,methodname,attributes):
         return getattr(self._module,methodname)(*attributes)
+class W_NoneObject:pass
 
 class ObjSpace:
     add = FakeRegister()
