@@ -43,6 +43,16 @@ def g(): print 10''', 'g', [])
 def g(x): return x''', 'g', [666])
         self.assertEquals(x, 666)
 
+    def test_exception(self):
+        x = testcode('''
+def f():
+    try:
+        raise Exception, 1
+    except Exception, e:
+        return e.args''', 'f', [])
+        self.assertEquals(x, 666)
+
+
 
 if __name__ == '__main__':
     unittest.main()
