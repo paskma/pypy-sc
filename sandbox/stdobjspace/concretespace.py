@@ -20,18 +20,15 @@ class ConcreteSpace(object):
 class IntObjSpace(ConcreteSpace):
     __slots__ = []
     def check(self, ob):
-        import intobject
-        return isinstance(ob, intobject.W_IntObject)
+        return isinstance(ob, self.space.W_IntObject)
     def check_exact(self, ob):
-        import intobject
-        return ob.__class__ is intobject.W_IntObject
+        return ob.__class__ is self.space.W_IntObject
     def from_string(self, s, base):
         return self.from_long(int(s, base))
     def from_unicode(self, u, base):
         return self.from_long(int(u, base))
     def from_long(self, l):
-        import intobject
-        return intobject.W_IntObject(l)
+        return self.space.W_IntObject(l)
     def as_long(self, w_int):
         if self.check(w_int):
             return w_int.intval
@@ -47,15 +44,13 @@ class IntObjSpace(ConcreteSpace):
 class FloatObjSpace(ConceteSpace):
     __slots__ = []
     def check(self, ob):
-        import floatobject
-        return isinstance(ob, floatobject.W_FloatObject)
+        return isinstance(ob, self.space.W_FloatObject)
     def check_exact(self, ob):
-        import floatobject
-        return ob.__class__ is floatobject.W_FloatObject
+        return ob.__class__ is self.space.W_FloatObject
     def from_string(self, w_str):
         return self.from_double(float(w_str))
     def from_double(self, d):
-        import float_object
+        return self.space.W_FloatObject(d)
     def as_double(self, w_float):
         if self.check(w_float):
             return w_float.floatval
