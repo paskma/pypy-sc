@@ -18,6 +18,8 @@ class CallWrapper:
         return getattr(self._module,methodname)(*attributes)
 class W_NoneObject:pass
 
+class W_BoolObject:pass
+
 class WrapClass:
     def __init__(self,value):
         self.value = value
@@ -46,7 +48,7 @@ class ObjSpace:
     float = FakeRegister()
     repr = FakeRegister()
     str = FakeRegister()
-    cmp = FakeRegister()
+    compare = FakeRegister()
     hash = FakeRegister()
     divmod = FakeRegister()
     abs = FakeRegister()
@@ -90,6 +92,9 @@ class ObjSpace:
 
     def newlong(self, thislong):
         return self.wrap(thislong)
+
+    def newbool(self, thisbool):
+        return self.wrap(thisbool)
 
 StdObjSpace = ObjSpace()
 

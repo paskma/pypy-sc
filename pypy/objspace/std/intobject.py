@@ -1,6 +1,7 @@
-from objspace import *
+from pypy.objspace.std.objspace import *
 from noneobject import W_NoneObject
 from boolobject import W_BoolObject
+from restricted_int import r_int, LONG_BIT
 
 applicationfile = StdObjSpace.AppFile(__name__)
 
@@ -19,26 +20,12 @@ for native integers, which tries to behave as in
 RPython, just for test purposes.
 """
 
-import sys
-
-# belongs to pyconfig.h
-LONG_BIT = 32   # XXX put this elsewhere and make it machine dependant
-                # by some auto configure
-
-IS_RESTRICTED = type(sys.maxint*2) is int
-
-if not IS_RESTRICTED:
-    from restricted_int import r_int
-
 class W_IntObject:
 
     delegate_once = {}
     
     def __init__(w_self, intval):
-        if IS_RESTRICTED:
-            w_self.intval = intval
-        else:
-            w_self.intval = r_int(intval)
+        w_self.intval = r_int(intval)
 
     def __repr__(w_self):
         """ representation for debugging purposes """
