@@ -49,8 +49,7 @@ def int_int_floordiv(space, w_int1, w_int2):
         z = x // y
     except ZeroDivisionError:
 		raise   # we have to implemet the exception or it will be ignored
-    except OverflowError:
-        raise FailedToImplement(OverflowError, "integer division")
+	# no overflow
     return W_IntObject(z)
 
 def int_int_truediv(space, w_int1, w_int2):
@@ -60,9 +59,33 @@ def int_int_truediv(space, w_int1, w_int2):
         z = x / y   # XXX make sure this is the new true division
     except ZeroDivisionError:
 		raise   # we have to implemet the exception or it will be ignored
-    except OverflowError:
-        raise FailedToImplement(OverflowError, "integer division")
+	# no overflow
     return W_IntObject(z)
+
+def int_int_mod(space, w_int1, w_int2):
+    x = w_int1.intval
+    y = w_int2.intval
+    try:
+        z = x % y
+    except ZeroDivisionError:
+		raise   # we have to implemet the exception or it will be ignored
+	# no overflow
+    return W_IntObject(z)
+
+def int_int_divmod(space, w_int1, w_int2):
+    x = w_int1.intval
+    y = w_int2.intval
+    try:
+		z = x // y
+		m = x % y
+        z = x % y
+    except ZeroDivisionError:
+		raise   # we have to implemet the exception or it will be ignored
+	# no overflow
+	####!!!! gack, what to return?
+    return W_IntObject(z)
+
+
 
 if 1 / 2 == 1 // 2:
 	int_int_div = int_int_floordiv
