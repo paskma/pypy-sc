@@ -635,12 +635,19 @@ for i in range(256):
     dispatch_table.append(fn)
 
 
+def name(thing):
+    try:
+        return thing.operationname
+    except AttributeError:
+        return thing.__name__
+
 def has_arg(opcode):
     return opcode >= dis.HAVE_ARGUMENT
 
 def dispatch_noarg(f, opcode):
     try:
         fn = dispatch_table[opcode]
+#        print name(fn)
     except KeyError:
         raise KeyError, "missing opcode %s" % dis.opname[opcode]
     fn(f)
@@ -649,6 +656,7 @@ def dispatch_arg(f, opcode, oparg):
     assert oparg >= 0
     try:
         fn = dispatch_table[opcode]
+#        print name(fn)
     except KeyError:
         raise KeyError, "missing opcode %s" % dis.opname[opcode]
     fn(f, oparg)
