@@ -1,3 +1,5 @@
+import new
+
 class FailedToImplement(Exception):
     def __init__(self,e):
         self.e = e
@@ -7,11 +9,11 @@ class FakeRegister:
         pass
 
 class CallWrapper:
-    def __init__(self,calldict):
-        self._calldict = calldict
+    def __init__(self,module):
+        self._module = module
 
     def call(self,space,methodname,attributes):
-        return self._calldict[methodname](*attributes)
+        return getattr(self._module,methodname)(*attributes)
 
 class ObjSpace:
     add = FakeRegister()
@@ -46,13 +48,15 @@ class ObjSpace:
         return item
 
     def applicationfile(self,name):
+        thismod = new.module(name+'_app')
         thisglobals = {}
         thislocals = {}
         try:
-            execfile(name+'-app.py',thisglobals,thislocals)
+            execfile(name+'-app.py',thismod.__dict__)
         except IOError:
-            execfile(name+'.app.py',thisglobals,thislocals)
-        ret = CallWrapper(thislocals)
+            execfile(name+'.app.py',thismod.__dict__)
+        #namespace = thislocals.update(thisglobals)
+        ret = CallWrapper(thismod)
         return ret
 
     def newtuple(self,tuplelist):
@@ -64,6 +68,6 @@ class ObjSpace:
 StdObjSpace = ObjSpace()
 
 if __name__ == '__main__':
-    space = StdObjSpace()
+    space = ObjSpace()
     handle = space.applicationfile('test')
     handle.call(space,'test',[2])
