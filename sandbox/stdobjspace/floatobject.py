@@ -8,7 +8,7 @@ class W_FloatObject:
         w_self.floatval = floatval
 
 def float_float(space,w_value):
-    if isinstance(w_value,W_FloatObject):
+    if w_value.__class__ == W_FloatObject:
         return w_value
     else:
         return W_FloatObject(w_value.floatval)
@@ -153,3 +153,34 @@ def float_float_pow(space, w_float1,w_float2,thirdArg=None):
     return W_FloatObject(z)
 
 StdObjSpace.pow.register(float_float_pow, W_FloatObject, W_FloatObject)
+
+def float_neg(space, w_float1):
+    return W_FloatObject(w_float1.floatval)
+
+StdObjSpace.neg.register(float_neg, W_FloatObject)
+
+def float_pos(space, w_float):
+    if w_float.__class__ == W_FloatObject:
+        return w_float
+    else:
+        return W_FloatObject(w_float.floatval)
+
+StdObjSpace.pos.register(float_pos, W_FloatObject)
+
+def float_abs(space, w_float):
+    return W_FloatObject(applicationfile.call(space, "float_fabs", [w_float.floatval]))
+
+StdObjSpace.abs.register(float_abs, W_FloatObject)
+
+def float_nonzero(space, w_float):
+    return w_float.floatval != 0.0
+
+StdObjSpace.nonzero.register(float_nonzero, W_FloatObject)
+
+def float_coerce(space, w_float):
+    if w_float.__class__ == W_FloatObject:
+        return w_float
+    else:
+        return W_FloatObject(w_float.floatval)
+
+StdObjSpace.coerce.register(float_coerce, W_FloatObject)

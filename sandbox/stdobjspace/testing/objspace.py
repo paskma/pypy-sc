@@ -42,6 +42,9 @@ class ObjSpace:
     cmp = FakeRegister()
     hash = FakeRegister()
     divmod = FakeRegister()
+    abs = FakeRegister()
+    nonzero = FakeRegister()
+    coerce = FakeRegister()
 
 
     w_TypeError = "w_TypeError"

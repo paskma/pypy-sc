@@ -3,6 +3,7 @@ import sys
 import os
 import objspace
 thisdir = os.getcwd()
+syspath = sys.path
 sys.path.insert(0,thisdir)
 sys.path.append('..')
 import unittest
@@ -116,6 +117,8 @@ def makeTestSuite():
 
 def main():
     unittest.main(defaultTest='makeTestSuite')
+    sys.path = syspath
+    os.chdir(thispath)
 
 if __name__ == '__main__':
     main()
