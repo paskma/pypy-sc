@@ -4,8 +4,8 @@
 # correctly wrap the exceptions.
 #
 
-from interpreter import pyframe
-from interpreter.baseobjspace import *
+from pypy.interpreter import pyframe
+from pypy.interpreter.baseobjspace import *
 import operator, types, new, sys
 
 

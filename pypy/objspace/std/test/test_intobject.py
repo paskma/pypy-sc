@@ -1,7 +1,7 @@
 import unittest, sys
 import testsupport
-from objspace.std import intobject as iobj
-from objspace.std.objspace import *
+from pypy.objspace.std import intobject as iobj
+from pypy.objspace.std.objspace import *
 
 
 class TestW_IntObject(unittest.TestCase):

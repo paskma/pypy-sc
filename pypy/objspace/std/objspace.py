@@ -1,5 +1,5 @@
-import interpreter.appfile
-from interpreter.baseobjspace import *
+import pypy.interpreter.appfile
+from pypy.interpreter.baseobjspace import *
 from multimethod import *
 
 
@@ -71,8 +71,9 @@ class StdObjSpace(ObjSpace):
             return self.w_False
 
     # special multimethods
-    unwrap  = MultiMethod('unwrap', 1)   # returns an unwrapped value
+    unwrap  = MultiMethod('unwrap', 1)   # returns an unwrapped object
     hash    = MultiMethod('hash', 1)     # returns an unwrapped int
+    is_true = MultiMethod('true?', 1)    # returns an unwrapped bool
     compare = MultiMethod('compare', 2)  # extra 3rd arg is a Python string
 
     # handling of the common fall-back cases

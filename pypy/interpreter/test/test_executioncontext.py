@@ -2,9 +2,9 @@ import unittest
 import testsupport
 
 
-from interpreter.pyframe import PyFrame
-from interpreter import baseobjspace, executioncontext
-from objspace.trivial import TrivialObjSpace
+from pypy.interpreter.pyframe import PyFrame
+from pypy.interpreter import baseobjspace, executioncontext
+from pypy.objspace.trivial import TrivialObjSpace
 
 
 class TestExecutionContext(unittest.TestCase):

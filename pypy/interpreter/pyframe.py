@@ -30,7 +30,7 @@ class PyFrame:
     def eval(self, executioncontext):
         "Interpreter main loop!"
         try:
-            while 1:
+            while True:
                 try:
                     try:
                         # fetch and dispatch the next opcode

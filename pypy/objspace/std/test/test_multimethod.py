@@ -1,7 +1,7 @@
 import unittest
 import testsupport
 
-from objspace.std.multimethod import *
+from pypy.objspace.std.multimethod import *
 
 
 

@@ -7,7 +7,7 @@ class TestInterpreter(unittest.TestCase):
     def codetest(self, code, functionname, args):
         """Compile and run the given code string, and then call its function
         named by 'functionname' with arguments 'args'."""
-        from interpreter import baseobjspace, executioncontext, appfile
+        from pypy.interpreter import baseobjspace, executioncontext, appfile
 
         bytecode = compile(code, '<test>', 'exec')
         apphelper = appfile.AppHelper(self.space, bytecode)
@@ -21,7 +21,7 @@ class TestInterpreter(unittest.TestCase):
             return self.space.unwrap(w_output)
 
     def setUp(self):
-        from objspace.trivial import TrivialObjSpace
+        from pypy.objspace.trivial import TrivialObjSpace
         self.space = TrivialObjSpace()
 
     def test_trivial(self):

@@ -1,4 +1,4 @@
-from interpreter.baseobjspace import OperationError
+from pypy.interpreter.baseobjspace import OperationError
 
 
 class FailedToImplement(Exception):
