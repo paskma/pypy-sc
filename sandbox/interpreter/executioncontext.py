@@ -1,5 +1,3 @@
-import sys
-
 
 class ExecutionContext:
 
@@ -26,8 +24,7 @@ def dynamic_get(longvarname):
     import sys
     f = sys._getframe()
     while f:
-        if f.f_locals.has_key(var):
-            return f.f_locals[var]
+        if f.f_locals.has_key(longvarname):
+            return f.f_locals[longvarname]
         f = f.f_back
     raise NameError, "or something"
-            
