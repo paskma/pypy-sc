@@ -1,19 +1,24 @@
-import unittest, sys, os
-sys.path.insert(0, '..')
-
-from pyframe import PyFrame
-import objectspace, trivialspace, executioncontext
+import unittest
+import testsupport
 
 
-def testcode(code, functionname, args):
+def testcode(code, functionname, args, space=None):
+    """Compile and run the given code string, and then call its function
+    named by 'functionname' with arguments 'args'.
+    The optional 'space' argument can specify an alternate object space."""
+    from interpreter.pyframe import PyFrame
+    from interpreter import baseobjspace, executioncontext
+    if space is None:
+        from objspace.trivial import TrivialObjSpace
+        space = TrivialObjSpace()
+
     bytecode = compile(code, '<test>', 'exec')
-
-    space = trivialspace.TrivialSpace()
-    apphelper = objectspace.AppHelper(space, bytecode)
+    apphelper = baseobjspace.AppHelper(space, bytecode)
     
     wrappedargs = [space.wrap(arg) for arg in args]
     w_output = apphelper.call(functionname, wrappedargs)
     return space.unwrap(w_output)
+
 
 
 class TestInterpreter(unittest.TestCase):

@@ -4,10 +4,12 @@
 # correctly wrap the exceptions.
 #
 
-import pyframe, objectspace
+from interpreter import pyframe
+from interpreter.baseobjspace import *
 import operator, types, new, sys
 
-class TrivialSpace(objectspace.ObjectSpace):
+
+class TrivialObjSpace(ObjSpace):
 
     def initialize(self):
         import __builtin__, types
@@ -48,7 +50,7 @@ class TrivialSpace(objectspace.ObjectSpace):
             name = self.unwrap(w_name)
             return getattr(obj, name)
         except:
-            raise objectspace.OperationError(*sys.exc_info()[:2])
+            raise OperationError(*sys.exc_info()[:2])
 
     for _name in ('pos', 'neg', 'not_', 'pos', 'neg', 'not_', 'invert',
                  'mul', 'truediv', 'floordiv', 'div', 'mod',
@@ -60,7 +62,7 @@ def %(_name)s(self, *args):
         return operator.%(_name)s(*args)
     except:
         cls, value, tb = sys.exc_info()
-        raise objectspace.OperationError(cls, value)
+        raise OperationError(cls, value)
 """ % locals()
 
     # in-place operators
@@ -111,7 +113,7 @@ def %(_name)s(self, *args):
         try:
             return w.next()
         except StopIteration:
-            raise objectspace.NoValue
+            raise NoValue
 
     def newfunction(self, code, globals, defaultarguments, closure=None):
         if closure is None:   # temp hack

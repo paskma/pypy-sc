@@ -1,12 +1,19 @@
 import os
 import executioncontext, pyframe
 
+__all__ = ['ObjSpace', 'OperationError', 'NoValue', 'AppFile']
+
 
 class OperationError(Exception):
     """Interpreter-level exception that signals an exception that should be
     sent to the application level.
     
     Arguments are the object-space exception class and value."""
+    
+    def __str__(self):
+        "Convenience for displaying nicer error messages."
+        w_exc, w_value = self.args
+        return '[%s: %s]' % (w_exc, w_value)
 
 
 class NoValue(Exception):
@@ -71,7 +78,7 @@ class AppHelper(Namespace):
 
 ##################################################################
 
-class ObjectSpace:
+class ObjSpace:
     """Base class for the interpreter-level implementations of object spaces.
     XXX describe here in more details what the object spaces are."""
 

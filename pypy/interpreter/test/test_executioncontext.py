@@ -1,15 +1,17 @@
-import unittest, sys, os
-sys.path.insert(0, '..')
+import unittest
+import testsupport
 
-from pyframe import PyFrame
-import trivialspace, executioncontext
+
+from interpreter.pyframe import PyFrame
+from interpreter import baseobjspace, executioncontext
+from objspace.trivial import TrivialObjSpace
 
 
 class TestExecutionContext(unittest.TestCase):
 
     def test_trivial1(self):
         # build frame
-        space = trivialspace.TrivialSpace()
+        space = TrivialObjSpace()
         ec = executioncontext.ExecutionContext(space)
         
         bytecode = compile('def f(x): return x+1', '', 'exec').co_consts[0]

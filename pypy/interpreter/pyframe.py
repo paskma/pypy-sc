@@ -1,8 +1,8 @@
 """ PyFrame class implementation with the interpreter main loop.
 """
 
-import opcodes
-import objectspace
+import opcode
+import baseobjspace
 
 
 class PyFrame:
@@ -34,14 +34,14 @@ class PyFrame:
                 try:
                     try:
                         # fetch and dispatch the next opcode
-                        opcode = self.nextop()
-                        if opcodes.has_arg(opcode):
+                        op = self.nextop()
+                        if opcode.has_arg(op):
                             oparg = self.nextarg()
-                            opcodes.dispatch_arg(self, opcode, oparg)
+                            opcode.dispatch_arg(self, op, oparg)
                         else:
-                            opcodes.dispatch_noarg(self, opcode)
+                            opcode.dispatch_noarg(self, op)
 
-                    except objectspace.OperationError, e:
+                    except baseobjspace.OperationError, e:
                         executioncontext.exception_trace(e)
                         # convert an OperationError into a reason to unroll
                         # the stack
@@ -98,7 +98,7 @@ class PyFrame:
             message = "(this is an error message that needs to be fixed)"
             w_exceptionclass = self.space.w_TypeError
             w_exceptionvalue = self.space.wrap(message)
-            raise objectspace.OperationError(w_exceptionclass, w_exceptionvalue)
+            raise baseobjspace.OperationError(w_exceptionclass, w_exceptionvalue)
         for i in range(len(arguments)):
             varname = self.getlocalvarname(i)
             w_varname = self.space.wrap(varname)
@@ -117,7 +117,7 @@ class PyFrame:
         w_attrname = self.space.wrap("__dict__")
         try:
             w_builtins = self.space.getattr(w_builtins, w_attrname)
-        except objectspace.OperationError, e:
+        except baseobjspace.OperationError, e:
             pass # catch and ignore any error
         self.w_builtins = w_builtins
 
@@ -219,7 +219,7 @@ class SApplicationException(StackUnroller):
         w_exc_class, w_exc_value = self.args
         STOPSTOPSTOP
         # XXX traceback?
-        raise objectspace.OperationError(w_exc_class, w_exc_value)
+        raise baseobjspace.OperationError(w_exc_class, w_exc_value)
 
 class SBreakLoop(StackUnroller):
     """Signals a 'break' statement."""
@@ -302,7 +302,7 @@ def unpackiterable(space, w_iterable):
     while True:
         try:
             w_item = space.iternext(w_iterator)
-        except objectspace.NoValue:
+        except baseobjspace.NoValue:
             break  # done
         items.append(w_item)
     return items
