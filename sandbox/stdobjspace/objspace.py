@@ -86,3 +86,69 @@ class StdObjectSpace:
 
     add = MultiMethod(2, '+')
     sub = MultiMethod(2, '-')
+
+    """
+
+    culled from trivialspace: a frighteningly long list of things that
+    will be implemented here, eventually
+
+    wrap
+    unwrap
+    type
+    checktype
+    newtuple
+    newlist
+    newdict
+    newslice
+    getiter
+    repr
+    pow
+    setattr
+    delattr
+    is_true
+    getattr
+    pos
+    neg
+    not_
+    pos
+    neg
+    not_
+    invert
+    mul
+    truediv
+    floordiv
+    div
+    mod
+    lshift
+    rshift
+    and_
+    xor
+    or_
+    getitem
+    setitem
+    delitem
+    inplace_pow
+    inplace_mul
+    inplace_truediv
+    inplace_floordiv
+    inplace_div
+    inplace_mod
+    inplace_add
+    inplace_sub
+    inplace_lshift
+    inplace_rshift
+    inplace_and
+    inplace_or
+    inplace_xor
+    iternext
+    newfunction
+    apply
+    in_
+    not_in
+    is_
+    is_not
+    exc_match
+    richcompare
+
+
+    """
