@@ -1,5 +1,6 @@
 from objspace import *
 
+applicationfile = StdObjSpace.applicationfile(__name__)
 
 class W_IntObject:
 
@@ -13,8 +14,45 @@ class W_IntObject:
     #w_result = space.richcompare(w_attrname, w_class, "==")
         #if space.is_true(w_result):
         #    return w_inttype
-        return applicationfile.call(space, "int_getattr", [w_self, w_attrname])
+        #return applicationfile.call(space, "int_getattr", [w_self, w_attrname])
 
+"""
+XXX not implemented:
+free list
+FromLong
+AsLong
+FromString
+FromUnicode
+print
+"""
+
+def int_repr(space, w_int1):
+    a = w_int1.intval
+    res = "%ld" % a
+    return space.wrap(a)
+
+def int_compare(space, w_int1, w_int2):
+    i = w_int1.intval
+    j = w_int2.intval
+    if i < j:
+        ret = -1
+    elif i > j:
+        ret = 1
+    else:
+        ret = 0
+    return W_IntObject(ret)
+
+StdObjSpace.compare.register(int_int_compare, W_IntObject, W_IntObject)
+
+def int_hash(w_int1):
+    #/* XXX If this is changed, you also need to change the way
+    #   Python's long, float and complex types are hashed. */
+    x = w_int1.intval
+    if x == -1:
+        x = -2
+    return W_IntObject(x)
+
+StdObjSpace.hash.register(int_int_hash, W_IntObject, W_IntObject)
 
 def int_int_add(space, w_int1, w_int2):
     x = w_int1.intval
@@ -110,7 +148,7 @@ def int_int_divmod(space, w_int1, w_int2):
                                 space.wrap("integer modulo"))
     # no overflow possible
     m = x % y
-    return W_TupleObject([z, m])
+    return space.newtuple([W_IntObject(z), W_IntObject(m)])
 
 StdObjSpace.divmod.register(int_int_divmod, W_IntObject, W_IntObject)
 
@@ -173,7 +211,7 @@ def _impl_int_int_pow(iv, iw, iz=None):
                                     space.wrap("integer exponentiation"))
     return W_IntObject(ix)
 
-def int_int_int_pow(w_int1, w_int2, w_int3):
+def int_int_int_pow(space, w_int1, w_int2, w_int3):
     x = w_int1.intval
     y = w_int2.intval
     z = w_int3.intval
@@ -182,7 +220,7 @@ def int_int_int_pow(w_int1, w_int2, w_int3):
 
 StdObjSpace.pow.register(int_int_int_pow, W_IntObject, W_IntObject, W_IntObject)
 
-def int_int_none_pow(w_int1, w_int2, w_none):
+def int_int_none_pow(space, w_int1, w_int2, w_none):
     x = w_int1.intval
     y = w_int2.intval
     ret = _impl_int_int_pow(x, y)
@@ -190,7 +228,7 @@ def int_int_none_pow(w_int1, w_int2, w_none):
 
 StdObjSpace.pow.register(int_int_none_pow, W_IntObject, W_IntObject, W_NoneObject)
 
-def int_neg(w_int1):
+def int_neg(space, w_int1):
     a = w_int1.intval
     try:
         x = -a
@@ -204,28 +242,28 @@ StdObjSpace.neg.register(int_neg, W_IntObject)
 # int_pos is supposed to do nothing, unless it has
 # a derived integer object, where it should return
 # an exact one.
-def int_pos(w_int1):
+def int_pos(space, w_int1):
     #not sure if this should be done this way:
     if w_int1.__class__ is W_IntObject:
         return w_int1
     a = w_int1.intval
     return W_IntObject(a)
 
-StdObjSpace.pos.register(int_pos, W_IntObject)
+StdObjSpace.pos.register(space, int_pos, W_IntObject)
 
-def int_abs(w_int1):
+def int_abs(space, w_int1):
     if w_int1.intval >= 0:
-        return int_pos(w_int1)
+        return int_pos(space, w_int1)
     else
-        return int_neg(w_int1)
+        return int_neg(space, w_int1)
 
 StdObjSpace.abs.register(int_abs, W_IntObject)
 
 # this is just an internal test, used where?
-def int_nonzero(w_int1):
+def int_nonzero(space, w_int1):
     return w_int1->intval != 0
 
-def int_invert(w_int1):
+def int_invert(space, w_int1):
     x = w_int1.intval
     a = ~ x
     return W_IntObject(a)
@@ -252,7 +290,7 @@ def _warn_or_raise_lshift():
         raise FailedToImplement(space.w_OverflowError,
                                 space.wrap("integer left shift"))
         
-def int_int_lshift(w_int1, w_int2):
+def int_int_lshift(space, w_int1, w_int2):
     a = w_int1.intval
     b = w_int2.intval
     if b < 0:
@@ -281,10 +319,10 @@ def int_int_lshift(w_int1, w_int2):
 
 StdObjSpace.lshift.register(int_int_lshift, W_IntObject, W_IntObject)
 
-def int_int_rshift(w_int1, w_int2):
+def int_int_rshift(space, w_int1, w_int2):
     a = w_int1.intval
     b = w_int2.intval
-    if (b < 0) {
+    if b < 0:
         raise OperationError(space.w_ValueError,
                              space.wrap("negative shift count"))
     if a == 0 or b == 0:
@@ -302,93 +340,91 @@ def int_int_rshift(w_int1, w_int2):
 
 StdObjSpace.lshift.register(int_int_rshift, W_IntObject, W_IntObject)
 
-static PyObject *
-int_and(PyIntObject *v, PyIntObject *w)
-{
-    register long a, b;
-    CONVERT_TO_LONG(v, a);
-    CONVERT_TO_LONG(w, b);
-    return PyInt_FromLong(a & b);
-}
+def int_int_and(space, w_int1, w_int2):
+    a = w_int1.intval
+    b = w_int2.intval
+    res = a & b
+    return W_IntObject(res)
 
-static PyObject *
-int_xor(PyIntObject *v, PyIntObject *w)
-{
-    register long a, b;
-    CONVERT_TO_LONG(v, a);
-    CONVERT_TO_LONG(w, b);
-    return PyInt_FromLong(a ^ b);
-}
+StdObjSpace.and.register(int_int_and, W_IntObject, W_IntObject)
 
-static PyObject *
-int_or(PyIntObject *v, PyIntObject *w)
-{
-    register long a, b;
-    CONVERT_TO_LONG(v, a);
-    CONVERT_TO_LONG(w, b);
-    return PyInt_FromLong(a | b);
-}
+def int_int_xor(space, w_int1, w_int2):
+    a = w_int1.intval
+    b = w_int2.intval
+    res = a ^ b
+    return W_IntObject(res)
 
-static int
-int_coerce(PyObject **pv, PyObject **pw)
-{
-    if (PyInt_Check(*pw)) {
-        Py_INCREF(*pv);
-        Py_INCREF(*pw);
-        return 0;
-    }
-    return 1; /* Can't do it */
-}
+StdObjSpace.xor.register(int_int_xor, W_IntObject, W_IntObject)
 
-static PyObject *
-int_int(PyIntObject *v)
-{
-    Py_INCREF(v);
-    return (PyObject *)v;
-}
+def int_int_or(space, w_int1, w_int2):
+    a = w_int1.intval
+    b = w_int2.intval
+    res = a | b
+    return W_IntObject(res)
 
-static PyObject *
-int_long(PyIntObject *v)
-{
-    return PyLong_FromLong((v -> ob_ival));
-}
+StdObjSpace.or_.register(int_int_or, W_IntObject, W_IntObject)
 
-static PyObject *
-int_float(PyIntObject *v)
-{
-    return PyFloat_FromDouble((double)(v -> ob_ival));
-}
+# coerce is not wanted
+##
+##static int
+##int_coerce(PyObject **pv, PyObject **pw)
+##{
+##    if (PyInt_Check(*pw)) {
+##        Py_INCREF(*pv);
+##        Py_INCREF(*pw);
+##        return 0;
+##    }
+##    return 1; /* Can't do it */
+##}
 
-static PyObject *
-int_oct(PyIntObject *v)
-{
-    char buf[100];
-    long x = v -> ob_ival;
-    if (x < 0) {
-        if (PyErr_Warn(PyExc_FutureWarning,
-                   "hex()/oct() of negative int will return "
-                   "a signed string in Python 2.4 and up") < 0)
-            return NULL;
-    }
-    if (x == 0)
-        strcpy(buf, "0");
-    else
-        PyOS_snprintf(buf, sizeof(buf), "0%lo", x);
-    return PyString_FromString(buf);
-}
+def int_int(space, w_int1):
+    return w_int1
 
-static PyObject *
-int_hex(PyIntObject *v)
-{
-    char buf[100];
-    long x = v -> ob_ival;
-    if (x < 0) {
-        if (PyErr_Warn(PyExc_FutureWarning,
-                   "hex()/oct() of negative int will return "
-                   "a signed string in Python 2.4 and up") < 0)
-            return NULL;
-    }
-    PyOS_snprintf(buf, sizeof(buf), "0x%lx", x);
-    return PyString_FromString(buf);
-}
+StdObjSpace.int.register(int_int, W_IntObject)
 
+def int_long(space, w_int1):
+    a = w_int1.intval
+    return space.newlong(a)
+
+StdObjSpace.long.register(int_long, W_IntObject)
+
+def int_float(space, w_int1):
+    a = w_int1.intval
+    x = float(a)
+    return space.newdouble(x)
+
+StdObjSpace.float.register(int_float, W_IntObject)
+
+def int_oct(space.w_int1):
+    x = w_int1.intval
+    if x < 0:
+        ## XXX what about this warning?
+        #if (PyErr_Warn(PyExc_FutureWarning,
+        #           "hex()/oct() of negative int will return "
+        #           "a signed string in Python 2.4 and up") < 0)
+        #    return NULL;
+        pass
+    if x == 0:
+        ret = "0"
+    else:
+        ret = "0%lo" % x
+    return space.wrap(ret)
+
+StdObjSpace.oct.register(int_oct, W_IntObject)
+
+def int_hex(space.w_int1):
+    x = w_int1.intval
+    if x < 0:
+        ## XXX what about this warning?
+        #if (PyErr_Warn(PyExc_FutureWarning,
+        #           "hex()/oct() of negative int will return "
+        #           "a signed string in Python 2.4 and up") < 0)
+        #    return NULL;
+        pass
+    if x == 0:
+        ret = "0"
+    else:
+        ret = "0x%lx" % x
+    return space.wrap(ret)
+
+StdObjSpace.hex.register(int_hex, W_IntObject)
