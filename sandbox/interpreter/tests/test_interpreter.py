@@ -38,5 +38,11 @@ def g(): return f()''', 'g', [])
 def g(): print 10''', 'g', [])
         self.assertEquals(x, None)
 
+    def test_identity(self):
+        x = testcode('''
+def g(x): return x''', 'g', [666])
+        self.assertEquals(x, 666)
+
+
 if __name__ == '__main__':
     unittest.main()
