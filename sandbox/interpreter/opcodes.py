@@ -1,6 +1,7 @@
 import dis, pypy, pyframe
 
 
+# dynamically loaded application-space utilities
 applicationfile = pypy.AppFile("opcodes.app.py")
 
 
@@ -96,9 +97,9 @@ BINARY_SUBTRACT = binaryoperation("sub")
 BINARY_SUBSCR   = binaryoperation("getitem")
 BINARY_LSHIFT   = binaryoperation("lshift")
 BINARY_RSHIFT   = binaryoperation("rshift")
-BINARY_AND = binary("and_")
-BINARY_XOR = binary("xor")
-BINARY_OR  = binary("or_")
+BINARY_AND = binaryoperation("and_")
+BINARY_XOR = binaryoperation("xor")
+BINARY_OR  = binaryoperation("or_")
 
 INPLACE_POWER    = binaryoperation("inplace_pow")
 INPLACE_MULTIPLY = binaryoperation("inplace_mul")
@@ -110,12 +111,12 @@ INPLACE_ADD      = binaryoperation("inplace_add")
 INPLACE_SUBTRACT = binaryoperation("inplace_sub")
 INPLACE_LSHIFT   = binaryoperation("inplace_lshift")
 INPLACE_RSHIFT   = binaryoperation("inplace_rshift")
-INPLACE_AND = binary("inplace_and_")
-INPLACE_XOR = binary("inplace_xor")
-INPLACE_OR  = binary("inplace_or_")
+INPLACE_AND = binaryoperation("inplace_and_")
+INPLACE_XOR = binaryoperation("inplace_xor")
+INPLACE_OR  = binaryoperation("inplace_or_")
 
 def slice(f, v, w):
-    w_slice = f.space.build_slice(v, w, None)
+    w_slice = f.space.new_slice(v, w, None)
     u = f.valuestack.pop()
     x = f.space.getitem(u, w_slice)
     f.push(x)
@@ -141,7 +142,7 @@ def SLICE_3(f):
     slice(f, v, w)
 
 def storeslice(f, v, w):
-    w_slice = f.space.build_slice(v, w, None)
+    w_slice = f.space.new_slice(v, w, None)
     u = f.valuestack.pop()
     t = f.valuestack.pop()
     f.space.setitem(u, w_slice, t)
@@ -167,7 +168,7 @@ def STORE_SLICE_3(f):
     storeslice(f, v, w)
 
 def deleteslice(f, v, w):
-    w_slice = f.space.build_slice(v, w, None)
+    w_slice = f.space.new_slice(v, w, None)
     u = f.valuestack.pop()
     f.space.delitem(u, w_slice)
 
@@ -391,48 +392,51 @@ def DELETE_FAST(f, varindex):
     varname = f.getlocalvarname(varindex)
     del f.locals[varname]
 
-def LOAD_CLOSURE(f, oparg):
-    # nested scopes: used in nested functions
+def LOAD_CLOSURE(f, varindex):
+    # nested scopes: access the cell object
     # XXX at some point implement an explicit traversal of
     #     syntactically nested frames
-    
-    x = f.getfreevar(oparg)
-    f.push(x)
+    varname = f.getfreevarname(varindex)
+    x = f.locals.cell(varname)
+    f.valuestack.push(x)
 
-def LOAD_DEREF(f, oparg):
-    # nested scopes: used in the parent functions
-    x = f.getderef(oparg)
-    f.push(x)
+def LOAD_DEREF(f, varindex):
+    # nested scopes: access a variable through its cell object
+    varname = f.getfreevarname(varindex)
+    x = f.locals[varname]
+    f.valuestack.push(x)
 
-def STORE_DEREF(f, oparg):
-    # nested scopes: used in the parent functions
-    w = f.pop()
-    f.setderef(oparg, w)
+def STORE_DEREF(f, varindex):
+    # nested scopes: access a variable through its cell object
+    varname = f.getfreevarname(varindex)
+    x = f.valuestack.pop()
+    f.locals[varname] = x
 
-def BUILD_TUPLE(f, oparg):
-    x = callobj("PyTuple_New", oparg)
-    for i in xrange(oparg):
-        v = f.pop()
-        callsite("PyTuple_SetItem", x, oparg-1-i, v)
-    f.push(x)
+def BUILD_TUPLE(f, itemcount):
+    items = [f.valuestack.pop() for i in range(itemcount)]
+    items.reverse()
+    x = f.space.new_tuple(items)
+    f.valuestack.push(x)
 
-def BUILD_LIST(f, oparg):
-    x = callobj("PyList_New", oparg)
-    for i in xrange(oparg):
-        v = f.pop()
-        callsite("PyList_SetItem", x, oparg-1-i, v)
-    f.push(x)
+def BUILD_LIST(f, itemcount):
+    items = [f.valuestack.pop() for i in range(itemcount)]
+    items.reverse()
+    x = f.space.new_list(items)
+    f.valuestack.push(x)
 
-def BUILD_MAP(f, oparg):
-    assert oparg == 0     # for future extension
-    x = callobj("PyDict_New")
-    f.push(x)
+def BUILD_MAP(f, zero):
+    if zero != 0:
+        raise pyframe.BytecodeCorruption
+    x = f.space.new_dict([])
+    f.valuestack.push(x)
 
-def LOAD_ATTR(f, oparg):
-    w = f.getname(oparg)
-    v = f.pop()
-    x = callobj("PyObject_GetAttr", v, w)
-    f.push(x)
+def LOAD_ATTR(f, nameindex):
+    "v.attributename"
+    attributename = f.getname(nameindex)
+    w_attributename = f.space.wrap(attributename)
+    v = f.valuestack.pop()
+    x = f.space.getattr(v, w_attributename)
+    f.valuestack.push(x)
 
 def COMPARE_OP(f, test):
     testnames = ["<", "<=", "==", "!=", ">", ">=",
@@ -443,148 +447,148 @@ def COMPARE_OP(f, test):
     x = f.space.richcompare(v, w, testname)
     f.valuestack.push(x)
 
-def IMPORT_NAME(f, oparg):
-    w = f.getname(oparg)
-    u = f.pop()
-    if u is not None:
-        assert type(u) in (tuple, list)   # exact type check
-        for name in u:
-            assert type(name) is str  # exact type check
-    x = callobj("import_name", f.getfbuiltins(),
-                w, f.getfglobals(), f.getflocals(), u)
-    f.push(x)
+def IMPORT_NAME(f, nameindex):
+    modulename = f.getname(nameindex)
+    w_modulename = f.space.wrap(modulename)
+    w_locals = f.space.wrap(f.locals)
+    w_fromlist = f.valuestack.pop()
+    x = applicationfile.call(f.space, "import_name",
+                             [f.w_builtins, w_modulename, f.w_globals,
+                              w_locals, w_fromlist])
+    f.valuestack.push(x)
 
 def IMPORT_STAR(f):
-    v = f.pop()
-    callint("import_star", v)
+    w_module = f.valuestack.pop()
+    w_locals = f.space.wrap(f.locals)
+    applicationfile.call(f.space, "import_star",
+                         [w_module, w_locals])
 
-def IMPORT_FROM(f, oparg):
-    w = f.getname(oparg)
-    v = f.top()
-    x = callobj("import_from", v, w)
-    f.push(x)
+def IMPORT_FROM(f, nameindex):
+    name = f.getname(nameindex)
+    w_name = f.space.wrap(name)
+    w_module = f.valuestack.top()
+    x = applicationfile.call(f.space, "import_from", [w_module, w_name])
+    f.valuestack.push(x)
 
-def JUMP_FORWARD(f, oparg):
-    f.next_instr += oparg
+def JUMP_FORWARD(f, stepby):
+    f.next_instr += stepby
 
-def JUMP_IF_FALSE(f, oparg):
-    v = f.top()
-    #if false:
-    f2 = f.copy()
-    f2.next_instr += oparg
-    #if true:
-    pass
+def JUMP_IF_FALSE(f, stepby):
+    v = f.valuestack.top()
+    if not f.space.is_true(v):
+        f.next_instr += stepby
 
-def JUMP_IF_TRUE(f, oparg):
-    v = f.top()
-    #if true:
-    f2 = f.copy()
-    f2.next_instr += oparg
-    #if false:
-    pass
+def JUMP_IF_TRUE(f, stepby):
+    v = f.valuestack.top()
+    if f.space.is_true(v):
+        f.next_instr += stepby
 
-def JUMP_ABSOLUTE(f, oparg):
-    f.next_instr = oparg
+def JUMP_ABSOLUTE(f, jumpto):
+    f.next_instr = jumpto
 
 def GET_ITER(f):
-    v = f.pop()
-    x = callobj("PyObject_GetIter", v)
-    f.push(x)
+    v = f.valuestack.pop()
+    x = f.space.getiter(v)
+    f.valuestack.push(x)
 
-def FOR_ITER(f, oparg):
-    v = f.top()
-    x = callobj("PyIter_Next", v)
-    # if x is not NULL
-    f2 = f.copy()
-    f2.push(x)
-    # else iterator ended normally
-    v = f.pop()
-    f.next_instr += oparg
+def FOR_ITER(f, jumpby):
+    w_iterator = f.valuestack.top()
+    try:
+        x = f.space.iternext(w_iterator)
+    except pypy.NoValue:
+        # iterator exhausted
+        f.valuestack.pop()
+        f.next_instr += jumpby
+    else:
+        f.valuestack.push(x)
 
-def FOR_LOOP(f, oparg):
-    raise ValueError, "FOR_LOOP is deprecated and unsafe"
+#def FOR_LOOP(f, oparg):
+#    removed
 
-def SETUP_LOOP(f, oparg):
-    # break:
-    f2 = f.copy()
-    f2.next_instr = f2.next_instr + oparg
-    # normal path
-    f.blocksetup("SETUP_LOOP", f.next_instr + oparg, f.stack_level())
+def SETUP_LOOP(f, offsettoend):
+    block = pyframe.LoopBlock(f, f.next_instr + offsettoend)
+    f.blockstack.push(block)
 
-def SETUP_EXCEPT(f, oparg):
-    # except:
-    f2 = f.copy()
-    f2.next_instr = f2.next_instr + oparg
-    f2.push(placeholder("exc_traceback"))
-    f2.push(placeholder("exc_value"))
-    f2.push(placeholder("exc_type"))
-    f2.finallylevel.append(f2.stack_level())
-    # normal path
-    f.blocksetup("SETUP_EXCEPT", f.next_instr + oparg, f.stack_level())
+def SETUP_EXCEPT(f, offsettoend):
+    block = pyframe.ExceptBlock(f, f.next_instr + offsettoend)
+    f.blockstack.push(block)
 
-def SETUP_FINALLY(f, oparg):
-    # finally:  (only the case with three stack objects pushed, exc val tb)
-    f2 = f.copy()
-    f2.next_instr = f2.next_instr + oparg
-    f2.push(placeholder("exc_traceback"))
-    f2.push(placeholder("exc_value"))
-    f2.push(placeholder("exc_type"))
-    f2.finallylevel.append(f2.stack_level())
-    # normal path
-    f.blocksetup("SETUP_FINALLY", f.next_instr + oparg, f.stack_level())
+def SETUP_FINALLY(f, offsettoend):
+    block = pyframe.FinallyBlock(f, f.next_instr + offsettoend)
+    f.blockstack.push(block)
+
+def call_function_extra(f, oparg, with_varargs, with_varkw):
+    n_arguments = oparg & 0xff
+    n_keywords = (oparg>>8) & 0xff
+    if with_varkw:
+        w_varkw = f.valuestack.pop()
+    if with_varargs:
+        w_varargs = f.valuestack.pop()
+    keywords = []
+    for i in range(n_keywords):
+        w_value = f.valuestack.pop()
+        w_key   = f.valuestack.pop()
+        keywords.append((w_value, w_key))
+    arguments = [f.valuestack.pop() for i in range(n_arguments)]
+    arguments.reverse()
+    w_function  = f.valuestack.pop()
+    w_arguments = f.space.new_tuple(arguments)
+    w_keywords  = f.space.new_dict(keywords)
+    if with_varargs:
+        w_arguments = applicationfile.call(f.space, "concatenate_arguments",
+                                           [w_arguments, w_varargs])
+    if with_kwargs:
+        w_keywords  = applicationfile.call(f.space, "concatenate_keywords",
+                                           [w_keywords,  w_varkw])
+    x = f.space.apply(w_function, w_arguments, w_keywords)
+    f.valuestack.push(x)
 
 def CALL_FUNCTION(f, oparg):
-    na = oparg & 0xff
-    nk = (oparg>>8) & 0xff
-    n = na + 2 * nk
-    for i in range(n):
-        f.pop()  # arguments
-    func = f.pop()
-    x = placeholder("call %s" % func)
-    f.push(x)
+    call_function_extra(f, oparg, False, False)
 
 def CALL_FUNCTION_VAR(f, oparg):
-    f.pop()  # vararg
-    CALL_FUNCTION(f, oparg)
+    call_function_extra(f, oparg, True,  False)
 
 def CALL_FUNCTION_KW(f, oparg):
-    f.pop()  # kw
-    CALL_FUNCTION(f, oparg)
+    call_function_extra(f, oparg, False, True)
 
 def CALL_FUNCTION_VAR_KW(f, oparg):
-    f.pop()  # kw
-    f.pop()  # vararg
-    CALL_FUNCTION(f, oparg)
+    call_function_extra(f, oparg, True,  True)
 
-def MAKE_FUNCTION(f, oparg):
-    f.pop()  # code object
-    for i in xrange(oparg):
-        f.pop()  # defaults
-    x = placeholder("new function")
-    f.push(x)
+def MAKE_FUNCTION(f, numdefaults):
+    w_codeobj = f.valuestack.pop()
+    defaultarguments = [f.valuestack.pop() for i in range(numdefaults)]
+    defaultarguments.reverse()
+    w_defaultarguments = f.space.new_tuple(defaultarguments)
+    x = f.space.new_function(w_codeobj, w_defaultarguments)
+    f.valuestack.push(x)
 
-def MAKE_CLOSURE(f, oparg):
-    codeobj = f.pop()  # code object
-    nfree = len(codeobj.co_freevars)
-    for i in xrange(nfree):
-        f.pop()  # closure
-    for i in xrange(oparg):
-        f.pop()  # defaults
-    x = placeholder("new closure")
-    f.push(x)
+def MAKE_CLOSURE(f, numdefaults):
+    w_codeobj = f.valuestack.pop()
+    codeobj = f.space.unwrap(w_codeobj)
+    nfreevars = len(codeobj.co_freevars)
+    freevars = [f.valuestack.pop() for i in range(nfreevars)]
+    freevars.reverse()
+    w_freevars = f.space.new_tuple(freevars)
+    defaultarguments = [f.valuestack.pop() for i in range(numdefaults)]
+    defaultarguments.reverse()
+    w_defaultarguments = f.space.new_tuple(defaultarguments)
+    x = f.space.new_function(w_codeobj, w_defaultarguments, w_freevars)
+    f.valuestack.push(x)
 
-def BUILD_SLICE(f, oparg):
-    assert oparg == 2 or oparg == 3   # future extension
-    if oparg == 3:
-        w = f.pop()
+def BUILD_SLICE(f, numargs):
+    if numargs == 3:
+        w = f.valuestack.pop()
+    elif numargs == 2:
+        w = None
     else:
-        w = NULL
-    v = f.pop()
-    u = f.pop()
-    x = placeholder("PySlice_New(%s, %s, %s)" % (u, v, w))
-    f.push(x)
+        raise pyframe.BytecodeCorruption
+    v = f.valuestack.pop()
+    u = f.valuestack.pop()
+    x = f.space.new_slice(u, v, w)
+    f.valuestack.push(x)
 
-def SET_LINENO(f, oparg):
+def SET_LINENO(f, lineno):
     pass
 
 def EXTENDED_ARG(f, oparg):

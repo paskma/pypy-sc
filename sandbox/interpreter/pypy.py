@@ -21,6 +21,8 @@ class NoValue(Exception):
 
 
 class AppFile:
+    """Dynamic loader of a set of Python functions and objects that
+    should work at the application level (conventionally in .app.py files)"""
 
     def __init__(self, filename):
         pass #.....

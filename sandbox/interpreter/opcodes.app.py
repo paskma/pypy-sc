@@ -54,3 +54,18 @@ def load_name(name, locals, globals, builtins):
                 return builtins[name]
             except KeyError:
                 raise NameError, "name '%s' is not defined" % name
+
+def concatenate_arguments(args, extra_args):
+    return args + tuple(extra_args)
+
+def concatenate_keywords(kw, extra_kw):
+    if not isinstance(extra_kw, dict):
+        raise TypeError, "argument after ** must be a dictionary"
+    result = kw.copy()
+    for key, value in extra_kw.items():
+        if key in result:
+            # XXX fix error message
+            raise TypeError, ("got multiple values "
+                              "for keyword argument '%s'" % key)
+        result[key] = value
+    return result
