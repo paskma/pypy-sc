@@ -3,7 +3,6 @@
 import setpath
 from pypy.appspace.complexobject import complex as pycomplex
 
-import cmath
 import math, sys, types, unittest
 
 from support import *
