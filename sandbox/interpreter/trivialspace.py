@@ -126,19 +126,19 @@ def %(_name)s(self, *args):
             return __builtins__.apply(callable, args, kwds)
 
     # comparisons
-    def in_(self, w1, w2):
+    def in_(w1, w2):
         return w1 in w2
 
-    def not_in(self, w1, w2):
+    def not_in(w1, w2):
         return w1 not in w2
 
-    def is_(self, w1, w2):
+    def is_(w1, w2):
         return w1 is w2
 
-    def is_not(self, w1, w2):
+    def is_not(w1, w2):
         return w1 is not w2
 
-    def exc_match(self, w1, w2):
+    def exc_match(w1, w2):
         try:
             try:
                 raise w1
