@@ -290,9 +290,10 @@ def int_abs(space, w_int1):
 
 StdObjSpace.abs.register(int_abs, W_IntObject)
 
-# this is just an internal test, used where?
-def int_nonzero(space, w_int1):
+def int_is_true(space, w_int1):
     return w_int1.intval != 0
+
+StdObjSpace.is_true.register(int_is_true, W_IntObject)
 
 def int_invert(space, w_int1):
     x = w_int1.intval

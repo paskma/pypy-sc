@@ -21,6 +21,27 @@ def str_unwrap(space, w_str):
 
 StdObjSpace.unwrap.register(str_unwrap, W_StringObject)
 
+def str_str_compare(space, w_str1, w_str2, op):
+    i = w_str1.value
+    j = w_str2.value
+    if   op == '<':  return space.newbool( i < j  )
+    elif op == '<=': return space.newbool( i <= j )
+    elif op == '==': return space.newbool( i == j )
+    elif op == '!=': return space.newbool( i != j )
+    elif op == '>':  return space.newbool( i > j  )
+    elif op == '>=': return space.newbool( i >= j )
+    #elif op == 'in':           # n.a.
+    #elif op == 'not in':       # n.a.
+    #elip op == 'is': is_,      # elsewhere
+    #elif op == 'is not':       # elsewhere
+    #elif op == 'exc match':    # exceptions
+    else:
+        msg = 'string comparison "%s" not implemented' % op
+        raise FailedToImplement(space.w_TypeError,
+                                space.wrap(msg))
+
+StdObjSpace.compare.register(str_str_compare, W_StringObject, W_StringObject)
+
 def getitem_str_int(space, w_str, w_int):
     return W_StringObject(w_str.value[w_int.intval])
 
@@ -43,5 +64,3 @@ def mod_str_ANY(space, w_left, w_right):
  
 def mod_str_tuple(space, w_format, w_args):
     notImplemented
-
-

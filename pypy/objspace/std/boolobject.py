@@ -1,3 +1,5 @@
+from pypy.objspace.std.objspace import *
+
 
 class W_BoolObject:
     delegate_once = {}
@@ -11,3 +13,10 @@ class W_BoolObject:
         # and so do all w_True wrapped values
         return (isinstance(w_other, W_BoolObject) and
                 w_self.boolval == w_other.boolval)
+
+
+def bool_is_true(space, w_bool):
+    return w_bool.boolval
+
+StdObjSpace.is_true.register(bool_is_true, W_BoolObject)
+StdObjSpace.unwrap. register(bool_is_true, W_BoolObject)
