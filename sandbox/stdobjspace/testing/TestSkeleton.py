@@ -1,9 +1,17 @@
 #!/usr/bin/env python
 import sys
-
+import os
+thisdir = os.getcwd()
+sys.path.insert(0,thisdir)
 sys.path.append('..')
-
 import unittest
+
+os.chdir('..')
+
+#######################################
+# import the module you want to test here
+# import yourmodule
+#######################################
 
 True,False = (1==1),(1==0)
 

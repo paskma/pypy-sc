@@ -1,6 +1,6 @@
 from objspace import *
 
-
+applicationfile = StdObjSpace.applicationfile(__name__)
 
 class W_FloatObject:
     
@@ -37,7 +37,7 @@ def float_float_compare(space, w_float1, w_float2):
 def float_hash(space,w_value):
     ## %reimplement%
     # real Implementation should be taken from _Py_HashDouble in object.c
-    return space.wrap(hash(w_value.floatvalue)))
+    return space.wrap(hash(w_value.floatvalue))
 
 def float_float_add(space, w_float1, w_float2):
     x = w_float1.floatval
@@ -81,7 +81,7 @@ def float_float_rem(space, w_float1, w_float2):
     y = w_float2.floatval
 def float_float_pow(space, w_float1,w_float2,thirdArg=None):
     if thirdArg is not None:
-        raise FailedToImplement(space.w_TypeError space.wrap("pow() 3rd argument not allowed unless all arguments are integers"))
+        raise FailedToImplement(space.w_TypeError,space.wrap("pow() 3rd argument not allowed unless all arguments are integers"))
     x = w_float1.floatval
     y = w_float2.floatval
     try:
