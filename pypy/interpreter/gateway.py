@@ -16,8 +16,8 @@ try:
 except ImportError:
     WeakKeyDictionary = dict   # XXX for PyPy
 from pypy.interpreter import eval, pycode
-from pypy.interpreter.baseobjspace import Wrappable, ObjSpace
 from pypy.interpreter.function import Function, Method
+from pypy.interpreter.baseobjspace import Wrappable, ObjSpace
 
 
 class BuiltinCode(eval.Code):
@@ -113,7 +113,7 @@ def call_with_prepared_arguments(space, function, argarray):
     return function(*argarray, **keywords)
 
 
-class Gateway(object):
+class Gateway(Wrappable):
     """General-purpose utility for the interpreter-level to create callables
     that transparently invoke code objects (and thus possibly interpreted
     app-level code)."""
@@ -132,30 +132,10 @@ class Gateway(object):
         #   staticglobals 
         #   staticdefs 
 
-    def __wrap__(self, space):
+    def __spacebind__(self, space):
         # to wrap a Gateway, we first make a real Function object out of it
         # and the result is a wrapped version of this Function.
-        return space.wrap(self.get_function(space))
-
-    def __call__(self, space, *args_w, **kwds_w):
-        # to call the Gateway as a non-method, 'space' must be explicitely
-        # supplied. We build the Function object and call it.
-        fn = self.get_function(space)
-        return fn(*args_w, **kwds_w)
-
-    def __get__(self, obj, cls=None):
-        # to get the Gateway as a method out of an instance, we build a
-        # Function and get it.
-        if obj is None:
-            return self   # Gateways as unbound methods not implemented
-        else:
-            # the object space is implicitely fetched out of the instance
-            if isinstance(self.code, BuiltinCode):
-                assert self.code.ismethod, (
-                    'global built-in function %r used as method' %
-                    self.code.func)
-            fn = self.get_function(obj.space)
-            return fn.__get__(obj, cls)
+        return self.get_function(space)
 
     def get_function(self, space):
         try:
@@ -194,6 +174,20 @@ class Gateway(object):
             self.functioncache[space] = fn
         return fn
 
+    def get_method(self, obj):
+        # to get the Gateway as a method out of an instance, we build a
+        # Function and get it.
+        # the object space is implicitely fetched out of the instance
+        if isinstance(self.code, BuiltinCode):
+            assert self.code.ismethod, (
+                'global built-in function %r used as method' %
+                self.code.func)
+        space = obj.space
+        fn = self.get_function(space)
+        w_obj = space.wrap(obj)
+        return Method(space, space.wrap(fn),
+                      w_obj, space.type(w_obj)) 
+
 
 class app2interp(Gateway):
     """Build a Gateway that calls 'app' at app-level."""
@@ -215,6 +209,19 @@ class app2interp(Gateway):
 
     def getdefaults(self, space):
         return [space.wrap(val) for val in self.staticdefs]
+
+    def __call__(self, space, *args_w, **kwds_w):
+        # to call the Gateway as a non-method, 'space' must be explicitely
+        # supplied. We build the Function object and call it.
+        fn = self.get_function(space)
+        return fn.descr_function_call(*args_w, **kwds_w)
+
+    def __get__(self, obj, cls=None):
+        if obj is None:
+            return self
+        else:
+            method = self.get_method(obj)
+            return method.descr_method_call
 
 class interp2app(Gateway):
     """Build a Gateway that calls 'f' at interp-level."""

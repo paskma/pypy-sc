@@ -5,12 +5,11 @@ tested, and complete. The only missing feature is support
 for function-iteration.
 """
 from pypy.objspace.std.objspace import *
-from itertype import W_SeqIterType
 
 
 class W_SeqIterObject(W_Object):
-    statictype = W_SeqIterType
-
+    from pypy.objspace.std.itertype import iter_typedef as typedef
+    
     def __init__(w_self, space, w_seq, index=0):
         W_Object.__init__(w_self, space)
         w_self.w_seq = w_seq
@@ -27,9 +26,9 @@ def next__SeqIter(space, w_seqiter):
     try:
         w_item = space.getitem(w_seqiter.w_seq, space.wrap(w_seqiter.index))
     except OperationError, e:
-        if e.match(space, space.w_IndexError):
-            raise NoValue
-        raise
+        if not e.match(space, space.w_IndexError):
+            raise
+        raise OperationError(space.w_StopIteration, space.w_None) 
     w_seqiter.index += 1
     return w_item
 

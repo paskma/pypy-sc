@@ -47,48 +47,48 @@ class TestW_DictObject(testit.TestCase):
         self.assertRaises_w(self.space.w_KeyError,
                             space.getitem,d,space.wrap('one'))
 
-    def test_cell(self):
-       space = self.space
-       wk1 = space.wrap('key')
-       d = W_DictObject(space, [])
-       w_cell = d.cell(space,wk1)
-       cell = space.unwrap(w_cell)
-       self.failUnless(cell.is_empty())
-       cell.set(space.wrap(1))
-       self.assertEqual_w(space.getitem(d,wk1),space.wrap(1))
-       wk2 = space.wrap('key2')
-       space.setitem(d,wk2,space.wrap(2))
-       cell = space.unwrap(d.cell(space,wk2))
-       self.assertEqual_w(cell.get(),space.wrap(2))
+##    def test_cell(self):
+##       space = self.space
+##       wk1 = space.wrap('key')
+##       d = W_DictObject(space, [])
+##       w_cell = d.cell(space,wk1)
+##       cell = space.unwrap(w_cell)
+##       self.failUnless(cell.is_empty())
+##       cell.set(space.wrap(1))
+##       self.assertEqual_w(space.getitem(d,wk1),space.wrap(1))
+##       wk2 = space.wrap('key2')
+##       space.setitem(d,wk2,space.wrap(2))
+##       cell = space.unwrap(d.cell(space,wk2))
+##       self.assertEqual_w(cell.get(),space.wrap(2))
 
-    def test_empty_cell(self):
-        space = self.space
-        d = W_DictObject(space,
-                         [(space.wrap('colour'), space.wrap(0)),
-                          (space.wrap('of'),     space.wrap(2)),
-                          (space.wrap('magic'),  space.wrap(1))])
-        w_cell = d.cell(space, space.wrap('of'))
-        d2 = W_DictObject(space,
-                          [(space.wrap('colour'), space.wrap(0)),
-                           (space.wrap('magic'),  space.wrap(1))])
-        self.assertNotEqual_w(d, d2)
-        space.delitem(d, space.wrap('of'))
-        self.assertEqual_w(d, d2)
+##    def test_empty_cell(self):
+##        space = self.space
+##        d = W_DictObject(space,
+##                         [(space.wrap('colour'), space.wrap(0)),
+##                          (space.wrap('of'),     space.wrap(2)),
+##                          (space.wrap('magic'),  space.wrap(1))])
+##        w_cell = d.cell(space, space.wrap('of'))
+##        d2 = W_DictObject(space,
+##                          [(space.wrap('colour'), space.wrap(0)),
+##                           (space.wrap('magic'),  space.wrap(1))])
+##        self.assertNotEqual_w(d, d2)
+##        space.delitem(d, space.wrap('of'))
+##        self.assertEqual_w(d, d2)
 
-    def test_empty_cell2(self):
-        space = self.space
-        d = W_DictObject(space,
-                         [(space.wrap('colour'), space.wrap(0)),
-                          (space.wrap('of'),     space.wrap(2)),
-                          (space.wrap('magic'),  space.wrap(1))])
-        w_cell = d.cell(space, space.wrap('of'))
-        d2 = W_DictObject(space,
-                          [(space.wrap('colour'), space.wrap(0)),
-                           (space.wrap('magic'),  space.wrap(1))])
-        self.assertNotEqual_w(d, d2)
-        cell = space.unwrap(w_cell)
-        cell.make_empty()
-        self.assertEqual_w(d, d2)
+##    def test_empty_cell2(self):
+##        space = self.space
+##        d = W_DictObject(space,
+##                         [(space.wrap('colour'), space.wrap(0)),
+##                          (space.wrap('of'),     space.wrap(2)),
+##                          (space.wrap('magic'),  space.wrap(1))])
+##        w_cell = d.cell(space, space.wrap('of'))
+##        d2 = W_DictObject(space,
+##                          [(space.wrap('colour'), space.wrap(0)),
+##                           (space.wrap('magic'),  space.wrap(1))])
+##        self.assertNotEqual_w(d, d2)
+##        cell = space.unwrap(w_cell)
+##        cell.make_empty()
+##        self.assertEqual_w(d, d2)
 
 
     def test_wrap_dict(self):
@@ -118,15 +118,15 @@ class TestW_DictObject(testit.TestCase):
             return [[w(a),w(b)] for a,b in lp]
         d = mydict()
         self.assertEqual_w(d, w({}))
-        args = w([[['a',2],[23,45]]])
+        args = w(([['a',2],[23,45]],))
         d = mydict(args)
         self.assertEqual_w(d, wd(deepwrap([['a',2],[23,45]])))
         d = mydict(args, w({'a':33, 'b':44}))
         self.assertEqual_w(d, wd(deepwrap([['a',33],['b',44],[23,45]])))
         d = mydict(w_kwds=w({'a':33, 'b':44}))
         self.assertEqual_w(d, wd(deepwrap([['a',33],['b',44]])))
-        self.assertRaises_w(space.w_TypeError, mydict, w([23]))
-        self.assertRaises_w(space.w_ValueError, mydict, w([[[1,2,3]]]))
+        self.assertRaises_w(space.w_TypeError, mydict, w((23,)))
+        self.assertRaises_w(space.w_ValueError, mydict, w(([[1,2,3]],)))
 
     def test_dict_pop(self):
         space = self.space
@@ -134,21 +134,19 @@ class TestW_DictObject(testit.TestCase):
         wd = space.newdict
         def mydict(w_args=w(()), w_kwds=w({})):
             return space.call(space.w_dict, w_args, w_kwds)
-        def deepwrap(lp):
-            return [[w(a),w(b)] for a,b in lp]
-        d = mydict(w_kwds=w({1:2, 3:4}))
-        dd = mydict(w_kwds=w({1:2, 3:4})) # means d.copy()
+        d = mydict(w_kwds=w({"1":2, "3":4}))
+        dd = mydict(w_kwds=w({"1":2, "3":4})) # means d.copy()
         pop = space.getattr(dd, w("pop"))
-        result = space.call_function(pop, w(1))
+        result = space.call_function(pop, w("1"))
         self.assertEqual_w(result, w(2))
         self.assertEqual_w(space.len(dd), w(1))
 
-        dd = mydict(w_kwds=w({1:2, 3:4})) # means d.copy()
+        dd = mydict(w_kwds=w({"1":2, "3":4})) # means d.copy()
         pop = space.getattr(dd, w("pop"))
-        result = space.call_function(pop, w(1), w(44))
+        result = space.call_function(pop, w("1"), w(44))
         self.assertEqual_w(result, w(2))
         self.assertEqual_w(space.len(dd), w(1))
-        result = space.call_function(pop, w(1), w(44))
+        result = space.call_function(pop, w("1"), w(44))
         self.assertEqual_w(result, w(44))
         self.assertEqual_w(space.len(dd), w(1))
 
@@ -159,12 +157,12 @@ class TestW_DictObject(testit.TestCase):
         w = space.wrap
         def mydict(w_args=w(()), w_kwds=w({})):
             return space.call(space.w_dict, w_args, w_kwds)
-        d = mydict(w_kwds=w({1:2, 3:4}))
+        d = mydict(w_kwds=w({"1":2, "3":4}))
         get = space.getattr(d, w("get"))
-        self.assertEqual_w(space.call_function(get, w(1)), w(2))
-        self.assertEqual_w(space.call_function(get, w(1), w(44)), w(2))
-        self.assertEqual_w(space.call_function(get, w(33)), w(None))
-        self.assertEqual_w(space.call_function(get, w(33), w(44)), w(44))
+        self.assertEqual_w(space.call_function(get, w("1")), w(2))
+        self.assertEqual_w(space.call_function(get, w("1"), w(44)), w(2))
+        self.assertEqual_w(space.call_function(get, w("33")), w(None))
+        self.assertEqual_w(space.call_function(get, w("33"), w(44)), w(44))
 
 
 

@@ -1,6 +1,5 @@
 from pypy.objspace.std.objspace import *
 from noneobject import W_NoneObject
-from floattype import W_FloatType
 
 ##############################################################
 # for the time being, all calls that are made to some external
@@ -15,7 +14,7 @@ class W_FloatObject(W_Object):
     """This is a reimplementation of the CPython "PyFloatObject" 
        it is assumed that the constructor takes a real Python float as
        an argument"""
-    statictype = W_FloatType
+    from pypy.objspace.std.floattype import float_typedef as typedef
     
     def __init__(w_self, space, floatval):
         W_Object.__init__(w_self, space)
@@ -240,8 +239,8 @@ def pos__Float(space, w_float):
 def abs__Float(space, w_float):
     return W_FloatObject(space, abs(w_float.floatval))
 
-def is_true__Float(space, w_float):
-    return w_float.floatval != 0.0
+def nonzero__Float(space, w_float):
+    return space.newbool(w_float.floatval != 0.0)
 
 ######## coersion must be done later
 later = """

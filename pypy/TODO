@@ -43,3 +43,10 @@
   http://codespeak.net/pypy/index.cgi?doc/objspace/multimethod
 
 * enhance the translator components to accept more of PyPy ...
+
+* add web server thread (!) that allows inspection of e.g. app-level
+  tracebacks (and stop clogging the user's terminal with them).
+
+* improve traceobjectspace! currently it only catches 
+  calls from outside the space into the space but not
+  the ones where the space calls operations on itself! 

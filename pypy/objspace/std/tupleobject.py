@@ -1,13 +1,12 @@
 from pypy.objspace.std.objspace import *
-from tupletype import W_TupleType
 from intobject import W_IntObject
 from sliceobject import W_SliceObject
 import slicetype
 
 
 class W_TupleObject(W_Object):
-    statictype = W_TupleType
-
+    from pypy.objspace.std.tupletype import tuple_typedef as typedef
+    
     def __init__(w_self, space, wrappeditems):
         W_Object.__init__(w_self, space)
         w_self.wrappeditems = wrappeditems   # a list of wrapped values
@@ -104,12 +103,16 @@ def gt__Tuple_Tuple(space, w_tuple1, w_tuple2):
     # No more items to compare -- compare sizes
     return space.newbool(len(items1) > len(items2))
 
-def repr__Tuple(space, w_tuple):
-    # XXX slimy! --mwh
-    return space.wrap(repr(space.unwrap(w_tuple)))
+def app_repr__Tuple(t):
+    if len(t) == 1:
+        return "(" + repr(t[0]) + ",)"
+    else:
+        return "(" + ", ".join([repr(x) for x in t]) + ')'
 
 def hash__Tuple(space, w_tuple):
     # silly-ish, but _correct_, while lacking it would be WRONG
     return space.len(w_tuple)
 
+from pypy.interpreter import gateway
+gateway.importall(globals())
 register_all(vars())

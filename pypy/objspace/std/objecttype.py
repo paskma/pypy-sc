@@ -1,35 +1,40 @@
-from pypy.objspace.std.objspace import *
-from typeobject import W_TypeObject
+from pypy.objspace.descroperation import Object
+from pypy.objspace.std.stdtypedef import *
+from pypy.objspace.std.register_all import register_all
+from pypy.objspace.std.objspace import StdObjSpace
 
 
-class W_ObjectType(W_TypeObject):
-    """The single instance of W_ObjectType is what the user sees as
-    '__builtin__.object'."""
+def descr__repr__(space, w_obj):
+    w = space.wrap
+    classname = space.unwrap(space.getattr(space.type(w_obj), w("__name__")))
+    id = space.unwrap(space.id(w_obj))
+    return w("<%s object at 0x%x>" % (classname, id))
 
-    typename = 'object'
-    staticbases = ()
+def descr__str__(space, w_obj):
+    return space.repr(w_obj)
 
-    # all multimethods that we want to be visible as object.__xxx__
-    # should be defined here.
+def descr__hash__(space, w_obj):
+    # XXX detect non-hashable instances (the ones overriding comparison only)
+    return space.id(w_obj)
 
-    object_getattr = StdObjSpace.getattribute
-    object_setattr = StdObjSpace.setattr
-    object_delattr = StdObjSpace.delattr
-    object_type    = StdObjSpace.type
-    object_repr    = StdObjSpace.repr
-    object_str     = StdObjSpace.str
-    object_hash    = StdObjSpace.hash
+def descr__class__(space, w_obj):
+    return space.type(w_obj)
 
-    # this is a method in 'object' because it is not an object space operation
-    object_init    = MultiMethod('__init__', 1, varargs=True, keywords=True)
-
-registerimplementation(W_ObjectType)
-
-
-def type_new__ObjectType_ObjectType(space, w_basetype, w_objecttype, w_args, w_kwds):
+def descr__new__(space, w_type, *args_w, **kwds_w):
     # XXX 2.2 behavior: ignoring all arguments
     from objectobject import W_ObjectObject
-    return W_ObjectObject(space), True
+    w_obj = W_ObjectObject(space)
+    return space.w_object.check_user_subclass(w_type, w_obj)
 
+# ____________________________________________________________
 
-register_all(vars(), W_ObjectType)
+object_typedef = StdTypeDef("object", [],
+    __getattribute__ = gateway.interp2app(Object.descr__getattribute__.im_func),
+    __setattr__ = gateway.interp2app(Object.descr__setattr__.im_func),
+    __delattr__ = gateway.interp2app(Object.descr__delattr__.im_func),
+    __str__ = gateway.interp2app(descr__str__),
+    __repr__ = gateway.interp2app(descr__repr__),
+    __hash__ = gateway.interp2app(descr__hash__),
+    __class__ = GetSetProperty(descr__class__),
+    __new__ = newmethod(descr__new__),
+    )

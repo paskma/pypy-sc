@@ -3,42 +3,14 @@ from pypy.interpreter.error import OperationError
 from pypy.interpreter.miscutils import Stack, getthreadlocals
 import pypy.module
 
-__all__ = ['ObjSpace', 'OperationError', 'NoValue']
+__all__ = ['ObjSpace', 'OperationError', 'Wrappable']
 
 
 class Wrappable(object):
     """A subclass of Wrappable is an internal, interpreter-level class
     that can nevertheless be exposed at application-level by space.wrap()."""
-
-    def get_wdict(self):
-        space = self.space
-        try:
-            return self.w_dict
-        except AttributeError:
-            w_dict = self.w_dict = space.newdict([])
-            for name,w_value in self.app_visible():
-                space.setitem(w_dict,space.wrap(name),w_value)
-            return w_dict
-
-    def app_visible(self):
-        """ returns [(name,w_value)...] for application-level visible attributes """ 
-        raise NotImplementedError
-
-    def pypy_getattr(self, w_name):
-        space = self.space 
-        w_dict = self.get_wdict()
-        try:
-            return space.getitem(w_dict,w_name)
-        except OperationError,e:
-            if not e.match(space,space.w_KeyError):
-                raise
-            raise OperationError(space.w_AttributeError,w_name)
-
-
-class NoValue(Exception):
-    """Raised to signal absence of value, e.g. in the iterator accessing
-    method 'op.next()' of object spaces."""
-
+    def __spacebind__(self, space):
+        return self
 
 class ObjSpace:
     """Base class for the interpreter-level implementations of object spaces.
@@ -48,12 +20,17 @@ class ObjSpace:
 
     def __init__(self):
         "Basic initialization of objects."
+        # sets all the internal descriptors 
         self.initialize()
 
-    def make_builtins(self):
+    def make_builtins(self, for_builtins):
         # initializing builtins may require creating a frame which in
         # turn already accesses space.w_builtins, provide a dummy one ...
         self.w_builtins = self.newdict([])
+
+        # insert stuff into the newly-made builtins
+        for key, w_value in for_builtins.items():
+            self.setitem(self.w_builtins, self.wrap(key), w_value)
 
         assert not hasattr(self, 'builtin')
         if not hasattr(self, 'sys'):
@@ -120,6 +97,9 @@ class ObjSpace:
         w_id_y = self.id(w_y)
         return self.eq(w_id_x, w_id_y)
 
+    def not_(self, w_obj):
+        return self.wrap(not self.is_true(w_obj))
+
     def unwrapdefault(self, w_value, default):
         if w_value is None or w_value == self.w_None:
             return default
@@ -140,7 +120,9 @@ class ObjSpace:
         while True:
             try:
                 w_item = self.next(w_iterator)
-            except NoValue:
+            except OperationError, e:
+                if not e.match(self, self.w_StopIteration):
+                    raise
                 break  # done
             if expected_length is not None and len(items) == expected_length:
                 raise ValueError, "too many values to unpack"
@@ -186,7 +168,8 @@ class ObjSpace:
 
     def call_function(self, w_func, *args_w, **kw_w):
         w_kw = self.newdict([(self.wrap(k), w_v) for k, w_v in kw_w.iteritems()])
-        return self.call(w_func, self.newtuple(list(args_w)), w_kw)
+        w_args = self.newtuple(list(args_w))
+        return self.call(w_func, w_args, w_kw)
 
     def call_method(self, w_obj, methname, *arg_w, **kw_w):
         w_meth = self.getattr(w_obj, self.wrap(methname))
@@ -219,7 +202,7 @@ ObjSpace.MethodTable = [
     ('delitem',         'delitem',   2, ['__delitem__']),
     ('pos',             'pos',       1, ['__pos__']),
     ('neg',             'neg',       1, ['__neg__']),
-    ('not_',            'not',       1, []),
+    ('nonzero',         'truth',     1, ['__nonzero__']),
     ('abs' ,            'abs',       1, ['__abs__']),
     ('hex',             'hex',       1, ['__hex__']),
     ('oct',             'oct',       1, ['__oct__']),
@@ -263,6 +246,7 @@ ObjSpace.MethodTable = [
     ('ge',              '>=',        2, ['__ge__', '__le__']),
     ('contains',        'contains',  2, ['__contains__']),
     ('iter',            'iter',      1, ['__iter__']),
+    ('next',            'next',      1, ['next']),
     ('call',            'call',      3, ['__call__']),
     ('get',             'get',       3, ['__get__']),
     ('set',             'set',       3, ['__set__']),
@@ -327,5 +311,4 @@ ObjSpace.ExceptionTable = [
 #      newstring([w_1, w_2,...]) -> w_string from ascii numbers (bytes)
 # newdict([(w_key,w_value),...]) -> w_dict
 #newslice(w_start,w_stop,w_step) -> w_slice (any argument may be a real None)
-#                   next(w_iter) -> w_value or raise NoValue
 #

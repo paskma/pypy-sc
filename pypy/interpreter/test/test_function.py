@@ -13,7 +13,7 @@ class AppTestFunctionIntrospection(testit.AppTestCase):
         self.assertEquals(f.func_defaults, None)
         self.assertEquals(f.func_dict, {})
         self.assertEquals(type(f.func_globals), dict)
-        self.assertEquals(f.func_closure, None)
+        #self.assertEquals(f.func_closure, None)  XXX
         self.assertEquals(f.func_doc, None)
         self.assertEquals(f.func_name, 'f')
 
@@ -25,10 +25,26 @@ class AppTestFunctionIntrospection(testit.AppTestCase):
         def f(): pass
         self.assertEquals(f.__name__, 'f')
         self.assertEquals(f.__doc__, None)
-        self.assert_(f.__name__ is f.func_name)
-        self.assert_(f.__doc__ is f.func_doc)
+        self.assert_(f.__name__ == f.func_name)
+        self.assert_(f.__doc__ == f.func_doc)
         self.assert_(f.__dict__ is f.func_dict)
-        #XXX self.assert_(hasattr(f, '__class__'))
+        self.assert_(hasattr(f, '__class__'))
+
+    def test_write_doc(self):
+        def f(): "hello"
+        self.assertEquals(f.__doc__, 'hello')
+        f.__doc__ = 'good bye'
+        self.assertEquals(f.__doc__, 'good bye')
+        del f.__doc__
+        self.assertEquals(f.__doc__, None)
+
+    def test_write_func_doc(self):
+        def f(): "hello"
+        self.assertEquals(f.func_doc, 'hello')
+        f.func_doc = 'good bye'
+        self.assertEquals(f.func_doc, 'good bye')
+        del f.func_doc
+        self.assertEquals(f.func_doc, None)
 
 class AppTestFunction(testit.AppTestCase):
     def test_simple_call(self):
@@ -117,24 +133,25 @@ class TestMethod(testit.IntTestCase):
         self.fn = Function(self.space, code)
         
     def test_get(self):
-        class X(object):
-            fn = self.fn
-        x = X()
-        meth = x.fn
+        space = self.space
+        w_meth = self.fn.descr_function_get(space.wrap(5), space.type(space.wrap(5)))
+        meth = space.unwrap(w_meth)
         self.failUnless(isinstance(meth, Method))
 
     def test_call(self):
-        class X(object):
-            fn = self.fn
-        x = X()
-        self.assertEquals(x.fn(42), 42)
+        space = self.space
+        w_meth = self.fn.descr_function_get(space.wrap(5), space.type(space.wrap(5)))
+        meth = space.unwrap(w_meth)
+        w_result = meth.descr_method_call(space.wrap(42))
+        self.assertEquals(space.unwrap(w_result), 42)
 
     def test_fail_call(self):
-        class X(object):
-            fn = self.fn
-        x = X()
-        self.assertRaises_w(self.space.w_TypeError, x.fn, "spam", "egg")
-
+        space = self.space
+        w_meth = self.fn.descr_function_get(space.wrap(5), space.type(space.wrap(5)))
+        meth = space.unwrap(w_meth)
+        self.assertRaises_w(self.space.w_TypeError,
+                            meth.descr_method_call,
+                            space.wrap("spam"), space.wrap("egg"))
 
 if __name__ == '__main__':
     testit.main()

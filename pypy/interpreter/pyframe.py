@@ -7,7 +7,7 @@ from pypy.interpreter.error import OperationError
 from pypy.interpreter import pytraceback
 
 
-class PyFrame(eval.Frame, baseobjspace.Wrappable):
+class PyFrame(eval.Frame):
     """Represents a frame for a regular Python function
     that needs to be interpreted.
 
@@ -51,6 +51,7 @@ class PyFrame(eval.Frame, baseobjspace.Wrappable):
                     except OperationError, e:
                         pytraceback.record_application_traceback(
                             self.space, e, self, last_instr)
+                        executioncontext.exception_trace(e)
                         # convert an OperationError into a control flow
                         # exception
                         import sys
@@ -81,19 +82,6 @@ class PyFrame(eval.Frame, baseobjspace.Wrappable):
                 break
             self.exceptionstack.pop()
     
-    ### application level visible attributes ###
-    def app_visible(self):
-        def makedict(**kw): return kw
-        space = self.space
-        d = makedict(
-            f_code = space.wrap(self.code),
-            f_locals = self.getdictscope(),
-            f_globals = self.w_globals,
-            f_builtins = self.w_builtins,
-            # XXX f_lasti, f_back, f_exc*, f_restricted need to do pypy_getattr directly
-            )
-        return d.items() 
-
 ### Frame Blocks ###
 
 class FrameBlock:
@@ -263,7 +251,6 @@ class SApplicationException(ControlFlowException):
     def action(self, frame, last_instr, executioncontext):
         e = self.args[0]
         frame.last_exception = e
-        executioncontext.exception_trace(e)
 
         ControlFlowException.action(self, frame,
                                     last_instr, executioncontext)

@@ -1,5 +1,4 @@
 from pypy.objspace.std.objspace import *
-from listtype import W_ListType
 from intobject import W_IntObject
 from sliceobject import W_SliceObject
 from tupleobject import W_TupleObject
@@ -10,8 +9,8 @@ from restricted_int import r_int, r_uint
 
 
 class W_ListObject(W_Object):
-    statictype = W_ListType
-
+    from pypy.objspace.std.listtype import list_typedef as typedef
+    
     def __init__(w_self, space, wrappeditems):
         W_Object.__init__(w_self, space)
         w_self.ob_item = []
@@ -38,7 +37,7 @@ def unwrap__List(space, w_list):
     items = [space.unwrap(w_item) for w_item in w_list.ob_item[:w_list.ob_size]]
     return list(items)
 
-def object_init__List(space, w_list, w_args, w_kwds):
+def init__List(space, w_list, w_args, w_kwds):
     if space.is_true(w_kwds):
         raise OperationError(space.w_TypeError,
                              space.wrap("no keyword arguments expected"))
@@ -52,7 +51,9 @@ def object_init__List(space, w_list, w_args, w_kwds):
         while True:
             try:
                 w_item = space.next(w_iterator)
-            except NoValue:
+            except OperationError, e:
+                if not e.match(space, space.w_StopIteration):
+                    raise
                 break  # done
             _ins1(w_list, w_list.ob_size, w_item)
     else:
@@ -251,14 +252,8 @@ def _setitem_slice_helper(space, w_list, w_slice, sequence2, len2):
         items[start+i*step] = sequence2[i]
     return space.w_None
 
-def repr__List(space, w_list):
-    w = space.wrap
-    a = space.add
-    reprs_w = map(space.repr, space.unpackiterable(w_list))
-    from pypy.objspace.std.stringtype import W_StringType
-    w_bm = space.getattr(space.wrap(', '), space.wrap('join'))
-    return a(a(w('['), space.call_function(w_bm, space.newlist(reprs_w))), w(']'))
-    return space.newstring([])
+def app_repr__List(l):
+    return "[" + ", ".join([repr(x) for x in l]) + ']'
 
 def hash__List(space,w_list):
     raise OperationError(space.w_TypeError,space.wrap("list objects are unhashable"))
@@ -533,4 +528,7 @@ static PyMethodDef list_methods[] = {
 };
 """
 
-register_all(vars(), W_ListType)
+from pypy.interpreter import gateway
+gateway.importall(globals())
+from pypy.objspace.std import listtype
+register_all(vars(), listtype)

@@ -295,10 +295,11 @@ def hasattr(ob, attr):
         return False
 
 def callable(ob):
-    # XXX remove 't is type' when we have proper types
-    #     that make this check no longer needed
-    t = type(ob)
-    return t is type or hasattr(t, '__call__')
+    for c in type(ob).__mro__:
+        if '__call__' in c.__dict__:
+            return True
+    else:
+        return False
 
 def dir(*args):
     """dir([object]) -> list of strings
@@ -536,6 +537,17 @@ class classmethod(object):
             return self.f(klass, *args)
         return newfunc
 
+if not hasattr(dict, 'fromkeys'):
+    def _fromkeys(cls, seq, value=None):
+        r = cls()
+        for s in seq:
+            r[s] = value
+        return r
+
+    dict.fromkeys = classmethod(_fromkeys)
+
+    del _fromkeys
+
 
 # super is a modified version from Guido's tutorial
 #     http://www.python.org/2.2.3/descrintro.html
@@ -561,14 +573,12 @@ class super(object):
         # Note: mro is an iterator, so the second loop
         # picks up where the first one left off!
         for cls in mro:
-            try:
-                # XXX
-                # XXX  build-in classes have no __dict__ currently!
-                # XXX
-                x = getattr(cls, attr)
-            except AttributeError:
+            try:                
+                x = cls.__dict__[attr]
+            except KeyError:
                 continue
-            x = _pypy_get(x, self.__self__)    # XXX replace with x.__get__
+            if hasattr(x, '__get__'):
+                x = x.__get__(self.__self__, type(self.__self__))
             return x
         raise AttributeError, attr
 

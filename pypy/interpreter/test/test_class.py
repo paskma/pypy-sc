@@ -3,7 +3,6 @@ from pypy.tool import testit
 
 
 class TestClassApp(testit.AppTestCase):
-
     
     def test_class(self):
         class C:
@@ -12,7 +11,7 @@ class TestClassApp(testit.AppTestCase):
         c = C()
         self.assertEquals(c.__class__, C)
 
-    def dont_test_metaclass_explicit(self):
+    def test_metaclass_explicit(self):
         class M(type):
             pass
         class C:
@@ -21,7 +20,7 @@ class TestClassApp(testit.AppTestCase):
         c = C()
         self.assertEquals(c.__class__, C)
 
-    def dont_test_metaclass_inherited(self):
+    def test_metaclass_inherited(self):
         class M(type):
             pass
         class B:
@@ -32,12 +31,14 @@ class TestClassApp(testit.AppTestCase):
         c = C()
         self.assertEquals(c.__class__, C)
 
-    def dont_test_metaclass_global(self):
+    def test_metaclass_global(self):
         d = {}
         metatest_text = """
 class M(type):
     pass
+
 __metaclass__ = M
+
 class C:
     pass
 """
@@ -61,7 +62,22 @@ class C:
                 raise RuntimeError
         c = C()
         self.assertRaises(RuntimeError, c.meth)
-            
-        
+
+    def test_class_attr(self):
+        class C:
+            a = 42
+        c = C()
+        self.assertEquals(c.a, 42)
+        self.assertEquals(C.a, 42)
+
+    def test_class_attr_inherited(self):
+        class C:
+            a = 42
+        class D(C):
+            pass
+        d = D()
+        self.assertEquals(d.a, 42)
+        self.assertEquals(D.a, 42)
+
 if __name__ == '__main__':
     testit.main()
