@@ -27,7 +27,7 @@ WARN_SHIFT = type(1 << LONG_BIT) == int
 
 IS_RESTRICTED = type(sys.maxint*2) is int
 
-if IS_RESTRICTED:
+if not IS_RESTRICTED:
     from restricted_int import r_int
 
 class W_IntObject:
@@ -75,7 +75,7 @@ def int_int_cmp(space, w_int1, w_int2):
 
 StdObjSpace.cmp.register(int_int_cmp, W_IntObject, W_IntObject)
 
-def int_hash(w_int1):
+def int_hash(space, w_int1):
     #/* XXX If this is changed, you also need to change the way
     #   Python's long, float and complex types are hashed. */
     x = w_int1.intval
@@ -251,7 +251,7 @@ def int_int_int_pow(space, w_int1, w_int2, w_int3):
 
 StdObjSpace.pow.register(int_int_int_pow, W_IntObject, W_IntObject, W_IntObject)
 
-def int_int_none_pow(space, w_int1, w_int2, w_none):
+def int_int_none_pow(space, w_int1, w_int2, w_none=None):
     x = w_int1.intval
     y = w_int2.intval
     ret = _impl_int_int_pow(x, y)
@@ -280,7 +280,7 @@ def int_pos(space, w_int1):
     a = w_int1.intval
     return W_IntObject(a)
 
-StdObjSpace.pos.register(space, int_pos, W_IntObject)
+StdObjSpace.pos.register(int_pos, W_IntObject)
 
 def int_abs(space, w_int1):
     if w_int1.intval >= 0:
@@ -372,7 +372,7 @@ def int_int_and(space, w_int1, w_int2):
     res = a & b
     return W_IntObject(res)
 
-StdObjSpace._and.register(int_int_and, W_IntObject, W_IntObject)
+StdObjSpace.and_.register(int_int_and, W_IntObject, W_IntObject)
 
 def int_int_xor(space, w_int1, w_int2):
     a = w_int1.intval
