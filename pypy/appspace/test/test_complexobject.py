@@ -1,11 +1,36 @@
+#!/usr/bin/env python
+
 #taken from CPython 2.3 (?)
 
-import setpath
-from pypy.appspace.complexobject import complex as pycomplex
+"""
+Test module for class complex in complexobject.py
 
-import math, sys, types, unittest
+As it seems there are some numerical differences in 
+the __div__ and __divmod__ methods which have to be 
+sorted out.
+"""
 
-from support import *
+
+import math
+import cmath
+import sys
+import types
+import unittest
+
+
+try:
+    from complexobject import complex as pycomplex
+except ImportError:
+    import setpath
+    from pypy.appspace.complexobject import complex as pycomplex
+
+
+try:
+    unicode
+    have_unicode = 1
+except NameError:
+    have_unicode = 0
+
 
 def equal(a, b):
     "Compare two complex or normal numbers. 0 if different, 1 if roughly equal."
@@ -25,6 +50,9 @@ def equal(a, b):
             return 0
         else:
             return 1
+    
+
+
 
 def enumerate():
     valueRange = xrange(-3, 3)
@@ -54,14 +82,14 @@ class TestComplex(unittest.TestCase):
         except TypeError:
             pass
         else:
-            raise TestFailed, 'complex("1", "1")'
+            self.fail('complex("1", "1")')
 
         try:
             pycomplex("1", "1")
         except TypeError:
             pass
         else:
-            raise TestFailed, 'complex("1", "1")'
+            self.fail('complex("1", "1")')
 
 
     def test_wrongInit2(self):
@@ -72,23 +100,23 @@ class TestComplex(unittest.TestCase):
         except TypeError:
             pass
         else:
-            raise TestFailed, 'complex(1, "1")'
+            self.fail('complex(1, "1")')
 
         try:
             pycomplex(1, "1")
         except TypeError:
             pass
         else:
-            raise TestFailed, 'complex(1, "1")'
+            self.fail('complex(1, "1")')
 
 
     def test_wrongInitFromString(self):
         "Compare string init. with CPython."
 
         if complex("  3.14+J  ") != 3.14+1j:
-            raise TestFailed, 'complex("  3.14+J  )"'
+            self.fail('complex("  3.14+J  )"')
         if not equal(pycomplex("  3.14+J  "), pycomplex(3.14,1)):
-            raise TestFailed, 'complex("  3.14+J  )"'
+            self.fail('complex("  3.14+J  )"')
 
 
     def test_wrongInitFromUnicodeString(self):
@@ -96,9 +124,9 @@ class TestComplex(unittest.TestCase):
 
         if have_unicode:
             if complex(unicode("  3.14+J  ")) != 3.14+1j:
-                raise TestFailed, 'complex(u"  3.14+J  )"'
+                self.fail('complex(u"  3.14+J  )"')
             if not equal(pycomplex(unicode("  3.14+J  ")), pycomplex(3.14, 1)):
-                raise TestFailed, 'complex(u"  3.14+J  )"'
+                self.fail('complex(u"  3.14+J  )"')
 
 
     def test_class(self):
@@ -109,10 +137,10 @@ class TestComplex(unittest.TestCase):
                 return 3.14j
         z = Z()
         if complex(z) != 3.14j:
-            raise TestFailed, 'complex(classinstance)'
+            self.fail('complex(classinstance)')
 
         if not equal(complex(z), pycomplex(0, 3.14)): 
-            raise TestFailed, 'complex(classinstance)'
+            self.fail('complex(classinstance)')
 
 
     def test_add_sub_mul_div(self):
@@ -121,21 +149,21 @@ class TestComplex(unittest.TestCase):
         for (z0c, z1c, z0p, z1p) in enumerate():
             mc = z0c*z1c
             mp = z0p*z1p
-            assert equal(mc, mp)
+            self.assert_(equal(mc, mp))
 
             sc = z0c+z1c
             sp = z0p+z1p
-            assert equal(sc, sp)
+            self.assert_(equal(sc, sp))
 
             dc = z0c-z1c
             dp = z0p-z1p
-            assert equal(dc, dp)
+            self.assert_(equal(dc, dp))
 
             if not equal(z1c, complex(0,0)): 
                 try:
                     qc = z0c/z1c
                     qp = z0p/z1p
-                    assert equal(qc, qp)
+                    self.assert_(equal(qc, qp))
                 except AssertionError:
                     print "c: (%s/%s) = (%s)" % (z0c, z1c, qc)
                     print "py:(%s/%s) = (%s)" % (z0p, z1p, qp)
@@ -144,17 +172,18 @@ class TestComplex(unittest.TestCase):
     def test_special(self):
         "Compare special methods with CPython."
         
+        ass = self.assert_
         for (x, y) in [(0,0), (0,1), (1,3.)]:
             zc = complex(x, y)
             zp = pycomplex(x, y)
 
-            assert equal(zc, zp), "%s != %s" % (zc, zp)
-            assert equal(-zc, -zp), "%s != %s" % (-zc, -zp)
-            assert equal(+zc, +zp), "%s != %s" % (+zc, +zp)
-            assert equal(abs(zc), abs(zp)), "%s != %s" % (abs(zc), abs(zp))
-            assert equal(zc.conjugate(), zp.conjugate()), "%s != %s" % (zc.conjugate(), zp.conjugate())
-            assert str(zc) == str(zp), "str(%s) != str(%s)" % (str(zc), str(zp))
-            assert hash(zc) == hash(zp), "%s == hash(%s) != hash(%s) == %s" % (hash(zc), zc, zp, hash(zp))
+            ass(equal(zc, zp), "%s != %s" % (zc, zp))
+            ass(equal(-zc, -zp), "%s != %s" % (-zc, -zp))
+            ass(equal(+zc, +zp), "%s != %s" % (+zc, +zp))
+            ass(equal(abs(zc), abs(zp)), "%s != %s" % (abs(zc), abs(zp)))
+            ass(equal(zc.conjugate(), zp.conjugate()), "%s != %s" % (zc.conjugate(), zp.conjugate()))
+            ass(str(zc) == str(zp), "str(%s) != str(%s)" % (str(zc), str(zp)))
+            ass(hash(zc) == hash(zp), "%s == hash(%s) != hash(%s) == %s" % (hash(zc), zc, zp, hash(zp)))
 
 
     def test_divmod(self):
@@ -163,17 +192,16 @@ class TestComplex(unittest.TestCase):
         for (z0c, z1c, z0p, z1p) in enumerate():
             mc = z0c*z1c
             mp = z0p*z1p
-            assert equal(mc, mp)
+            self.assert_(equal(mc, mp))
 
-            # divmod(9,4) = 2,1
             if not equal(z1c, complex(0,0)): 
                 try:
                     ddc, mmc = divmod(z0c, z1c)
-                    assert ddc*z1c + mmc == z0c
+                    self.assert_(ddc*z1c + mmc == z0c)
                     ddp, mmp = divmod(z0p, z1p)
-                    # assert ddp*z1p + mmp == z0p
-                    assert equal(ddc, ddp)
-                    assert equal(mmc, mmp)
+                    # self.assert_(ddp*z1p + mmp == z0p)
+                    self.assert_(equal(ddc, ddp))
+                    self.assert_(equal(mmc, mmp))
                 except AssertionError:
                     print "c: divmod(%s,%s) = (%s,%s)" % (z0c, z1c, ddc,mmc)
                     print "py:divmod(%s,%s) = (%s,%s)" % (z0p, z1p, ddp,mmp)
@@ -185,13 +213,13 @@ class TestComplex(unittest.TestCase):
         for (z0c, z1c, z0p, z1p) in enumerate():
             mc = z0c*z1c
             mp = z0p*z1p
-            assert equal(mc, mp)
+            self.assert_(equal(mc, mp))
 
             if not equal(z1c, complex(0,0)): 
                 try:
                     rc = z0c%z1c
                     rp = z0p%z1p
-                    assert equal(rc, rp)
+                    self.assert_(equal(rc, rp))
                 except AssertionError:
                     print "c: %s%%%s = %s" % (z0c, z1c, rc)
                     print "py:%s%%%s = %s" % (z0p, z1p, rp)
@@ -207,10 +235,11 @@ class TestComplex(unittest.TestCase):
                 assert equal(pc, pp)
                 pc = z0c**z0c.real
                 pp = z0p**z0p.real
-                assert equal(pc, pp)
-                                
+                self.assert_(equal(pc, pp))
 
 
+
+# used previously for investigating numerical instabilities
 
 def dm(self, other):
     # a divmod like used in complex.
