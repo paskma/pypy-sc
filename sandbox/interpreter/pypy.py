@@ -15,9 +15,20 @@ class OperationError(Exception):
     Arguments are the object-space exception class and value."""
 
 
+class NoValue(Exception):
+    """Raised to signal absence of value, e.g. in the iterator accessing
+    method 'iternext()' of object spaces."""
 
 
-def applicationcall(space, functionname, argumentslist):
-    w_function = applicationfunction(f.space, functionname)
-    w_arguments = f.space.new_tuple(argumentslist)
-    return f.space.apply(w_function, w_arguments)
+class AppFile:
+
+    def __init__(self, filename):
+        pass #.....
+
+    def findobject(self, space, name):
+        pass #.....
+
+    def call(self, space, functionname, argumentslist):
+        w_function = self.findobject(space, functionname)
+        w_arguments = space.new_tuple(argumentslist)
+        return space.apply(w_function, w_arguments)

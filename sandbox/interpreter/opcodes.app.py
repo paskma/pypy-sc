@@ -41,3 +41,16 @@ def print_newline():
     except AttributeError:
         raise RuntimeError, "lost sys.stdout"
     print_newline_to(stream)
+
+
+def load_name(name, locals, globals, builtins):
+    try:
+        return locals[name]
+    except KeyError:
+        try:
+            return globals[name]
+        except KeyError:
+            try:
+                return builtins[name]
+            except KeyError:
+                raise NameError, "name '%s' is not defined" % name

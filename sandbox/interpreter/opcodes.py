@@ -1,6 +1,9 @@
 import dis, pypy, pyframe
 
 
+applicationfile = pypy.AppFile("opcodes.app.py")
+
+
 class unaryoperation:
     def __init__(self, operationname):
         self.operationname = operationname
@@ -26,7 +29,7 @@ class binaryoperation:
 ##
 
 def LOAD_FAST(f, varindex):
-    varname = f.getname(varindex)
+    varname = f.getlocalvarname(varindex)
     x = f.locals[varname]
     f.valuestack.push(x)
 
@@ -36,7 +39,7 @@ def LOAD_CONST(f, constindex):
 
 def STORE_FAST(f, varindex):
     v = f.valuestack.pop()
-    varname = f.getname(varindex)
+    varname = f.getlocalvarname(varindex)
     f.locals[varname] = v
 
 def POP_TOP(f):
@@ -203,45 +206,45 @@ def DELETE_SUBSCR(f):
 
 def PRINT_EXPR(f):
     v = f.valuestack.pop()
-    pypy.applicationcall(f.space, "print_expr", [v])
+    applicationfile.call(f.space, "print_expr", [v])
 
 def PRINT_ITEM_TO(f):
     w_stream = f.valuestack.pop()
     v = f.valuestack.pop()
-    pypy.applicationcall(f.space, "print_item_to", [v, w_stream])
+    applicationfile.call(f.space, "print_item_to", [v, w_stream])
 
 def PRINT_ITEM(f):
     v = f.valuestack.pop()
-    pypy.applicationcall(f.space, "print_item", [v])
+    applicationfile.call(f.space, "print_item", [v])
 
 def PRINT_NEWLINE_TO(f):
     w_stream = f.valuestack.pop()
-    pypy.applicationcall(f.space, "print_newline_to", [w_stream])
+    applicationfile.call(f.space, "print_newline_to", [w_stream])
 
 def PRINT_NEWLINE(f):
-    pypy.applicationcall(f.space, "print_newline", [])
+    applicationfile.call(f.space, "print_newline", [])
 
 def BREAK_LOOP(f):
     raise pyframe.BreakLoop
 
-def CONTINUE_LOOP(f, oparg):
-    raise pyframe.ContinueLoop
+def CONTINUE_LOOP(f, startofloop):
+    raise pyframe.ContinueLoop(startofloop)
 
-def RAISE_VARARGS(f, oparg):
-    if oparg == 0:
-        pypy.applicationcall(f.space, "raise0")
-    elif oparg == 1:
+def RAISE_VARARGS(f, nbargs):
+    if nbargs == 0:
+        applicationfile.call(f.space, "raise0")
+    elif nbargs == 1:
         w = f.valuestack.pop()
-        pypy.applicationcall(f.space, "raise1", [w])
-    elif oparg == 2:
+        applicationfile.call(f.space, "raise1", [w])
+    elif nbargs == 2:
         v = f.valuestack.pop()
         w = f.valuestack.pop()
-        pypy.applicationcall(f.space, "raise2", [v, w])
-    elif oparg == 3:
+        applicationfile.call(f.space, "raise2", [v, w])
+    elif nbargs == 3:
         u = f.valuestack.pop()
         v = f.valuestack.pop()
         w = f.valuestack.pop()
-        pypy.applicationcall(f.space, "raise3", [u, v, w])
+        applicationfile.call(f.space, "raise3", [u, v, w])
     else:
         raise pyframe.BytecodeCorruption
 
@@ -266,82 +269,143 @@ def EXEC_STMT(f):
 
 def POP_BLOCK(f):
     block = f.blockstack.pop()
-    f.clearvaluestack(block.initialstackdepth)
+    block.cleanup(f)  # the block knows how to clean up the value stack
 
 def END_FINALLY(f):
-    if f.top() is None:
-        f.pop()
-    else:
-        finallylevel = f.finallylevel.pop()
-        assert f.stack_level() == finallylevel
-        raise f.ExitLoop
+    # unlike CPython, the information on what to do at the end
+    # of a 'finally' is not stored in the value stack, but in
+    # the block stack, in a new dedicated block type which knows
+    # how to restore the environment (exception, break/continue...)
+    # at the beginning of the 'finally'.
+    block = f.blockstack.pop()
+    block.cleanup(f)
 
 def BUILD_CLASS(f):
-    u = f.pop()
-    v = f.pop()
-    w = f.pop()
-    x = callobj("build_class", u, v, w)
+    u = f.valuestack.pop()
+    v = f.valuestack.pop()
+    w = f.valuestack.pop()
+    x = applicationfile.call(f.space, "build_class", [u, v, w])
     f.push(x)
 
-def STORE_NAME(f, oparg):
-    w = f.getname(oparg)
-    v = f.pop()
-    callint("PyDict_SetItem", f.getflocals(), w, v)
+def STORE_NAME(f, varindex):
+    varname = f.getname(varindex)
+    v = f.valuestack.pop()
+    f.locals[varname] = v
 
-def DELETE_NAME(f, oparg):
-    w = f.getname(oparg)
-    callint("PyDict_DelItem", f.getflocals(), w)
+def DELETE_NAME(f, varindex):
+    varname = f.getname(varindex)
+    del f.locals[varname]
 
-def UNPACK_SEQUENCE(f, oparg):
-    v = f.pop()
-    for i in xrange(oparg):
-        w = placeholder("sequence item %d" % i)
-        f.push(w)
-    callsite("...XXX UNPACKING...")
+def UNPACK_SEQUENCE(f, itemcount):
+    v = f.valuestack.pop()
+    w_iterator = f.space.getiter(v)
+    items = []
+    for i in range(itemcount):
+        try:
+            w_item = f.space.iternext(w_iterator)
+        except pypy.NoValue:
+            if i == 1:
+                plural = ""
+            else:
+                plural = "s"
+            message = "need more than %d value%s to unpack" % (i, plural)
+            w_exceptionclass = applicationfile.findobject(f.space, "ValueError")
+            w_exceptionvalue = f.space.wrap(message)
+            raise OperationError(w_exceptionclass, w_exceptionvalue)
+        items.append(w_item)
+    # check that we have exhausted the iterator now.
+    try:
+        f.space.iternext(w_iterator)
+    except pypy.NoValue:
+        pass
+    else:
+        w_exceptionclass = applicationfile.findobject(f.space, "ValueError")
+        w_exceptionclass = f.space.wrap("too many values to unpack")
+        raise OperationError(w_exceptionclass, w_exceptionvalue)
+    items.reverse()
+    for item in items:
+        f.valuestack.push(item)
 
-def STORE_ATTR(f, oparg):
-    w = f.getname(oparg)
-    v = f.pop()
-    u = f.pop()
-    callint("PyObject_SetAttr", v, w, u)
+def STORE_ATTR(f, nameindex):
+    "v.attributename = u"
+    attributename = f.getname(nameindex)
+    w_attributename = f.space.wrap(attributename)
+    v = f.valuestack.pop()
+    u = f.valuestack.pop()
+    f.space.setattr(v, w_attributename, u)
 
-def DELETE_ATTR(f, oparg):
-    w = f.getname(oparg)
-    v = f.pop()
-    callint("delete_attr", v, w)
+def DELETE_ATTR(f, nameindex):
+    "del v.attributename"
+    attributename = f.getname(nameindex)
+    w_attributename = f.space.wrap(attributename)
+    v = f.valuestack.pop()
+    f.space.delattr(v, w_attributename)
 
-def STORE_GLOBAL(f, oparg):
-    w = f.getname(oparg)
-    v = f.pop()
-    callint("PyDict_SetItem", f.getfglobals(), w, v)
+def STORE_GLOBAL(f, nameindex):
+    varname = f.getname(nameindex)
+    w_varname = f.space.wrap(varname)
+    v = f.valuestack.pop()
+    f.space.setitem(f.w_globals, w_varname, v)
 
-def DELETE_GLOBAL(f, oparg):
-    w = f.getname(oparg)
-    callint("PyDict_DelItem", f.getfglobals(), w)
+def DELETE_GLOBAL(f, nameindex):
+    varname = f.getname(nameindex)
+    w_varname = f.space.wrap(varname)
+    f.space.delitem(f.w_globals, w_varname)
 
-def LOAD_NAME(f, oparg):
-    w = f.getname(oparg)
-    x = callobj("PyDict_GetItem", f.getflocals(), w)
-    f.push(x)
+def LOAD_NAME(f, nameindex):
+    varname = f.getname(nameindex)
+    w_varname = f.space.wrap(varname)
+    w_locals = f.space.wrap(f.locals)
+    x = applicationfile.call(f.space, "load_name",
+                             [w_varname, w_locals, f.w_globals, f.w_builtins])
+    f.valuestack.push(x)
 
-def LOAD_GLOBAL(f, oparg):
-    w = f.getname(oparg)
-    x = callobj("load_global", f.getfglobals(), f.getfbuiltins(), w)
-    f.push(x)
+def LOAD_GLOBAL(f, nameindex):
+    varname = f.getname(nameindex)
+    w_varname = f.space.wrap(varname)
+    try:
+        x = f.space.getitem(f.w_globals, w_varname)
+    except OperationError, e:
+        # catch KeyErrors
+        w_exc_class, w_exc_value = e.args
+        w_KeyError = applicationfile.findobject(f.space, "KeyError")
+        w_match = f.space.richcompare(w_exc_class, w_KeyError, "exc match")
+        if not f.space.is_true(w_match):
+            raise
+        # we got a KeyError, now look in the built-ins
+        try:
+            x = f.space.getitem(f.w_builtins, w_varname)
+        except OperationError, e:
+            # catch KeyErrors again
+            w_exc_class, w_exc_value = e.args
+            w_match = f.space.richcompare(w_exc_class, w_KeyError, "exc match")
+            if not f.space.is_true(w_match):
+                raise
+            message = "global name '%s' is not defined" % varname
+            w_exc_class = applicationfile.findobject(f.space, "NameError")
+            w_exc_value = f.space.wrap(message)
+            raise OperationError(w_exc_class, w_exc_value)
+    f.valuestack.push(x)
 
-def DELETE_FAST(f, oparg):
-    x = f.getlocal(oparg)
-    f.setlocal(oparg, NULL)
+def DELETE_FAST(f, varindex):
+    varname = f.getlocalvarname(varindex)
+    del f.locals[varname]
 
 def LOAD_CLOSURE(f, oparg):
+    # nested scopes: used in nested functions
+    # XXX at some point implement an explicit traversal of
+    #     syntactically nested frames
+    
     x = f.getfreevar(oparg)
     f.push(x)
 
 def LOAD_DEREF(f, oparg):
+    # nested scopes: used in the parent functions
     x = f.getderef(oparg)
     f.push(x)
 
 def STORE_DEREF(f, oparg):
+    # nested scopes: used in the parent functions
     w = f.pop()
     f.setderef(oparg, w)
 
@@ -370,13 +434,14 @@ def LOAD_ATTR(f, oparg):
     x = callobj("PyObject_GetAttr", v, w)
     f.push(x)
 
-def COMPARE_OP(f, oparg):
-    w = f.pop()
-    v = f.pop()
-    op = dis.cmp_op[oparg]
-    assert op != "BAD"   # why is this in cmp_op?
-    x = callobj("cmp_outcome", oparg, v, w)
-    f.push(x)
+def COMPARE_OP(f, test):
+    testnames = ["<", "<=", "==", "!=", ">", ">=",
+                 "in", "not in", "is", "is not", "exc match"]
+    testname = testnames[test]
+    w = f.valuestack.pop()
+    v = f.valuestack.pop()
+    x = f.space.richcompare(v, w, testname)
+    f.valuestack.push(x)
 
 def IMPORT_NAME(f, oparg):
     w = f.getname(oparg)
