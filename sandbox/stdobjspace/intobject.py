@@ -1,12 +1,12 @@
 from objspace import *
 
+
 class W_IntObject:
 
     delegate_once = {}
     
     def __init__(w_self, intval):
         w_self.intval = intval
-
 
     def getattr(w_self, space, w_attrname):
         #w_class = space.wrap("__class__")
@@ -22,8 +22,11 @@ def int_int_add(space, w_int1, w_int2):
     try:
         z = x + y
     except OverflowError:
-        raise FailedToImplement(OverflowError, "integer addition")
+        raise FailedToImplement(space.w_OverflowError,
+                                space.wrap("integer addition"))
     return W_IntObject(z)
+
+StdObjSpace.add.register(int_int_add, W_IntObject, W_IntObject)
 
 def int_int_sub(space, w_int1, w_int2):
     x = w_int1.intval
@@ -31,8 +34,11 @@ def int_int_sub(space, w_int1, w_int2):
     try:
         z = x - y
     except OverflowError:
-        raise FailedToImplement(OverflowError, "integer subtraction")
+        raise FailedToImplement(space.w_OverflowError,
+                                space.wrap("integer substraction"))
     return W_IntObject(z)
+
+StdObjSpace.sub.register(int_int_sub, W_IntObject, W_IntObject)
 
 def int_int_mul(space, w_int1, w_int2):
     x = w_int1.intval
@@ -40,8 +46,11 @@ def int_int_mul(space, w_int1, w_int2):
     try:
         z = x * y
     except OverflowError:
-        raise FailedToImplement(OverflowError, "integer multiplication")
+        raise FailedToImplement(space.w_OverflowError,
+                                space.wrap("integer multiplication"))
     return W_IntObject(z)
+
+StdObjSpace.mul.register(int_int_mul, W_IntObject, W_IntObject)
 
 def int_int_floordiv(space, w_int1, w_int2):
     x = w_int1.intval
@@ -49,9 +58,14 @@ def int_int_floordiv(space, w_int1, w_int2):
     try:
         z = x // y
     except ZeroDivisionError:
-        raise   # we have to implement the exception or it will be ignored
-    # no overflow
+        raise OperationError(space.w_ZeroDivisionError,
+                             space.wrap("integer division by zero"))
+    except OverflowError:
+        raise FailedToImplement(space.w_OverflowError,
+                                space.wrap("integer division"))
     return W_IntObject(z)
+
+StdObjSpace.floordiv.register(int_int_floordiv, W_IntObject, W_IntObject)
 
 def int_int_truediv(space, w_int1, w_int2):
     x = w_int1.intval
@@ -61,8 +75,12 @@ def int_int_truediv(space, w_int1, w_int2):
     except ZeroDivisionError:
         raise OperationError(space.w_ZeroDivisionError,
                              space.wrap("integer division by zero"))
-    # no overflow
+    except OverflowError:
+        raise FailedToImplement(space.w_OverflowError,
+                                space.wrap("integer division"))
     return W_IntObject(z)
+
+StdObjSpace.truediv.register(int_int_truediv, W_IntObject, W_IntObject)
 
 def int_int_mod(space, w_int1, w_int2):
     x = w_int1.intval
@@ -70,26 +88,291 @@ def int_int_mod(space, w_int1, w_int2):
     try:
         z = x % y
     except ZeroDivisionError:
-        raise   # we have to implement the exception or it will be ignored
-    # no overflow
+        raise OperationError(space.w_ZeroDivisionError,
+                             space.wrap("integer modulo by zero"))
+    except OverflowError:
+        raise FailedToImplement(space.w_OverflowError,
+                                space.wrap("integer modulo"))
     return W_IntObject(z)
+
+StdObjSpace.mod.register(int_int_mod, W_IntObject, W_IntObject)
 
 def int_int_divmod(space, w_int1, w_int2):
     x = w_int1.intval
     y = w_int2.intval
     try:
         z = x // y
-        m = x % y
     except ZeroDivisionError:
-        raise   # we have to implement the exception or it will be ignored
-    # no overflow
+        raise OperationError(space.w_ZeroDivisionError,
+                             space.wrap("integer divmod by zero"))
+    except OverflowError:
+        raise FailedToImplement(space.w_OverflowError,
+                                space.wrap("integer modulo"))
+    # no overflow possible
+    m = x % y
     return W_TupleObject([z, m])
 
+StdObjSpace.divmod.register(int_int_divmod, W_IntObject, W_IntObject)
 
+## install the proper int_int_div
 if 1 / 2 == 1 // 2:
     int_int_div = int_int_floordiv
 else:
     int_int_div = int_int_truediv
 
-StdObjSpace.add.register(int_add, W_IntObject, W_IntObject)
+StdObjSpace.div.register(int_int_div, W_IntObject, W_IntObject)
+
+# helper for pow()
+
+def _impl_int_int_pow(iv, iw, iz=None):
+    if iw < 0:
+        if iz is not None:
+            raise OperationError(space.w_TypeError,
+                             space.wrap("pow() 2nd argument "
+                 "cannot be negative when 3rd argument specified"))
+        #/* Return a float.  This works because we know that
+        #   this calls float_pow() which converts its
+        #   arguments to double. */
+        ## actually bounce it
+        raise FailedToImplement(space.w_ValueError,
+                                space.wrap("integer exponentiation"))
+    if iz is not None:
+        if iz == 0:
+            raise FailedToImplement(space.w_ValueError,
+                                    space.wrap("pow() 3rd argument cannot be 0"))
+    temp = iv
+    ix = 1
+    while iw > 0:
+        if iw & 1 {
+            try:
+                ix = ix*temp
+            except OverflowError:
+                raise FailedToImplement(space.w_OverflowError,
+                                        space.wrap("integer exponentiation"))
+        iw >>= 1   #/* Shift exponent down by 1 bit */
+        if iw==0:
+            break
+        try:
+            temp *= temp   #/* Square the value of temp */
+        except OverflowError:
+            raise FailedToImplement(space.w_OverflowError,
+                                    space.wrap("integer exponentiation"))
+        if iz:
+            #/* If we did a multiplication, perform a modulo */
+            try:
+                ix = ix % iz;
+                temp = temp % iz;
+            except OverflowError:
+                raise FailedToImplement(space.w_OverflowError,
+                                        space.wrap("integer exponentiation"))
+    if iz:
+        try:
+            ix = ix % iz
+        except OverflowError:
+            raise FailedToImplement(space.w_OverflowError,
+                                    space.wrap("integer exponentiation"))
+    return W_IntObject(ix)
+
+def int_int_int_pow(w_int1, w_int2, w_int3):
+    x = w_int1.intval
+    y = w_int2.intval
+    z = w_int3.intval
+    ret = _impl_int_int_pow(x, y, z)
+    return W_IntObject(ret)
+
+StdObjSpace.pow.register(int_int_int_pow, W_IntObject, W_IntObject, W_IntObject)
+
+def int_int_none_pow(w_int1, w_int2, w_none):
+    x = w_int1.intval
+    y = w_int2.intval
+    ret = _impl_int_int_pow(x, y)
+    return W_IntObject(ret)
+
+StdObjSpace.pow.register(int_int_none_pow, W_IntObject, W_IntObject, W_NoneObject)
+
+def int_neg(w_int1):
+    a = w_int1.intval
+    try:
+        x = -a
+    except OverflowError:
+        raise FailedToImplement(space.w_OverflowError,
+                                space.wrap("integer negation"))
+    return W_IntObject(x)
+
+StdObjSpace.neg.register(int_neg, W_IntObject)
+
+# int_pos is supposed to do nothing, unless it has
+# a derived integer object, where it should return
+# an exact one.
+def int_pos(w_int1):
+    #not sure if this should be done this way:
+    if w_int1.__class__ is W_IntObject:
+        return w_int1
+    a = w_int1.intval
+    return W_IntObject(a)
+
+StdObjSpace.pos.register(int_pos, W_IntObject)
+
+def int_abs(w_int1):
+    if w_int1.intval >= 0:
+        return int_pos(w_int1)
+    else
+        return int_neg(w_int1)
+
+StdObjSpace.abs.register(int_abs, W_IntObject)
+
+# this is just an internal test, used where?
+def int_nonzero(w_int1):
+    return w_int1->intval != 0
+
+def int_invert(w_int1):
+    x = w_int1.intval
+    a = ~ x
+    return W_IntObject(a)
+
+StdObjSpace.invert.register(int_invert, W_IntObject)
+
+def int_int_lshift(w_int1, w_int2):
+static PyObject *
+int_lshift(PyIntObject *v, PyIntObject *w)
+{
+    long a, b, c;
+    CONVERT_TO_LONG(v, a);
+    CONVERT_TO_LONG(w, b);
+    if (b < 0) {
+        PyErr_SetString(PyExc_ValueError, "negative shift count");
+        return NULL;
+    }
+    if (a == 0 || b == 0)
+        return int_pos(v);
+    if (b >= LONG_BIT) {
+        if (PyErr_Warn(PyExc_FutureWarning,
+                   "x<<y losing bits or changing sign "
+                   "will return a long in Python 2.4 and up") < 0)
+            return NULL;
+        return PyInt_FromLong(0L);
+    }
+    c = a << b;
+    if (a != Py_ARITHMETIC_RIGHT_SHIFT(long, c, b)) {
+        if (PyErr_Warn(PyExc_FutureWarning,
+                   "x<<y losing bits or changing sign "
+                   "will return a long in Python 2.4 and up") < 0)
+            return NULL;
+    }
+    return PyInt_FromLong(c);
+}
+
+static PyObject *
+int_rshift(PyIntObject *v, PyIntObject *w)
+{
+    register long a, b;
+    CONVERT_TO_LONG(v, a);
+    CONVERT_TO_LONG(w, b);
+    if (b < 0) {
+        PyErr_SetString(PyExc_ValueError, "negative shift count");
+        return NULL;
+    }
+    if (a == 0 || b == 0)
+        return int_pos(v);
+    if (b >= LONG_BIT) {
+        if (a < 0)
+            a = -1;
+        else
+            a = 0;
+    }
+    else {
+        a = Py_ARITHMETIC_RIGHT_SHIFT(long, a, b);
+    }
+    return PyInt_FromLong(a);
+}
+
+static PyObject *
+int_and(PyIntObject *v, PyIntObject *w)
+{
+    register long a, b;
+    CONVERT_TO_LONG(v, a);
+    CONVERT_TO_LONG(w, b);
+    return PyInt_FromLong(a & b);
+}
+
+static PyObject *
+int_xor(PyIntObject *v, PyIntObject *w)
+{
+    register long a, b;
+    CONVERT_TO_LONG(v, a);
+    CONVERT_TO_LONG(w, b);
+    return PyInt_FromLong(a ^ b);
+}
+
+static PyObject *
+int_or(PyIntObject *v, PyIntObject *w)
+{
+    register long a, b;
+    CONVERT_TO_LONG(v, a);
+    CONVERT_TO_LONG(w, b);
+    return PyInt_FromLong(a | b);
+}
+
+static int
+int_coerce(PyObject **pv, PyObject **pw)
+{
+    if (PyInt_Check(*pw)) {
+        Py_INCREF(*pv);
+        Py_INCREF(*pw);
+        return 0;
+    }
+    return 1; /* Can't do it */
+}
+
+static PyObject *
+int_int(PyIntObject *v)
+{
+    Py_INCREF(v);
+    return (PyObject *)v;
+}
+
+static PyObject *
+int_long(PyIntObject *v)
+{
+    return PyLong_FromLong((v -> ob_ival));
+}
+
+static PyObject *
+int_float(PyIntObject *v)
+{
+    return PyFloat_FromDouble((double)(v -> ob_ival));
+}
+
+static PyObject *
+int_oct(PyIntObject *v)
+{
+    char buf[100];
+    long x = v -> ob_ival;
+    if (x < 0) {
+        if (PyErr_Warn(PyExc_FutureWarning,
+                   "hex()/oct() of negative int will return "
+                   "a signed string in Python 2.4 and up") < 0)
+            return NULL;
+    }
+    if (x == 0)
+        strcpy(buf, "0");
+    else
+        PyOS_snprintf(buf, sizeof(buf), "0%lo", x);
+    return PyString_FromString(buf);
+}
+
+static PyObject *
+int_hex(PyIntObject *v)
+{
+    char buf[100];
+    long x = v -> ob_ival;
+    if (x < 0) {
+        if (PyErr_Warn(PyExc_FutureWarning,
+                   "hex()/oct() of negative int will return "
+                   "a signed string in Python 2.4 and up") < 0)
+            return NULL;
+    }
+    PyOS_snprintf(buf, sizeof(buf), "0x%lx", x);
+    return PyString_FromString(buf);
+}
 
