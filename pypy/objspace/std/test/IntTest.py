@@ -2,6 +2,7 @@
 import sys
 import os
 import objspace
+
 thisdir = os.getcwd()
 sys.path.insert(0, thisdir)
 os.chdir('..')
@@ -295,16 +296,7 @@ class intTest(unittest.TestCase):
         result = iobj.int_hex(self.space, f1)
         self.assertEquals(self.space.unwrap(result), hex(x))
 
-def makeTestSuite():
-    suiteAtomic = unittest.TestSuite()
-    loader = unittest.TestLoader()
-    suiteAtomic.addTest(loader.loadTestsFromTestCase(intTest))
-    return suiteAtomic
-
-def main():
-    os.chdir("..")
-    unittest.TextTestRunner().run(makeTestSuite())
-    os.chdir(thisdir)
-
 if __name__ == '__main__':
-    main()
+    os.chdir("..")
+    unittest.main()
+    os.chdir(thisdir)
