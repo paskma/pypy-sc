@@ -1,6 +1,5 @@
 import unittest
-import testsupport
-
+import support
 
 from pypy.interpreter.pyframe import PyFrame
 from pypy.interpreter import baseobjspace, executioncontext

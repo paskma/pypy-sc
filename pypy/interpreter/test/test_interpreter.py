@@ -1,6 +1,5 @@
 import unittest
-import testsupport
-
+import support
 
 class TestInterpreter(unittest.TestCase):
 

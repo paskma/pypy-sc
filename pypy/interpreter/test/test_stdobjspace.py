@@ -1,7 +1,6 @@
 import unittest
-import testsupport
+import support
 import test_interpreter
-
 
 class TestStdObjSpace(test_interpreter.TestInterpreter):
 
