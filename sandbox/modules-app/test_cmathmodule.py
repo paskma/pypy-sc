@@ -9,7 +9,7 @@ import cmathmodule
 from test_complexobject import equal, enumerate
 
 
-class CMathModuleTest(unittest.TestCase):
+class TestCMathModule(unittest.TestCase):
 
     def test_funcs(self):
         "Compare with CPython."
@@ -47,15 +47,5 @@ class CMathModuleTest(unittest.TestCase):
 
 
 
-def makeSuite():
-    suite = unittest.TestSuite()
-    loader = unittest.TestLoader()    
-    suite.addTest(loader.loadTestsFromTestCase(CMathModuleTest))
-
-    return suite
-
-
-
-
 if __name__ == "__main__":
-    unittest.TextTestRunner().run(makeSuite())
+    unittest.main()

@@ -46,7 +46,7 @@ def enumerate():
 
 
 
-class ComplexObjectTest(unittest.TestCase):
+class TestComplex(unittest.TestCase):
 
     def test_wrongInit1(self):
         "Compare wrong init. with CPython."
@@ -240,15 +240,5 @@ def testNumericalInstability():
 
 
 
-def makeSuite():
-    suite = unittest.TestSuite()
-    loader = unittest.TestLoader()    
-    suite.addTest(loader.loadTestsFromTestCase(ComplexObjectTest))
-
-    return suite
-
-
-
-
 if __name__ == "__main__":
-    unittest.TextTestRunner().run(makeSuite())
+    unittest.main()
