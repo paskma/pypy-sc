@@ -3,6 +3,7 @@ import unittest
 from pyframe import PyFrame
 import trivialspace
 
+# note that we are running the tests at the interpreter level!
 
 class TestInterpreter(unittest.TestCase):
 
