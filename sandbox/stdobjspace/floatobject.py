@@ -1,6 +1,6 @@
 from objspace import *
 
-applicationfile = StdObjSpace.applicationfile(__name__)
+applicationfile = StdObjSpace.AppFile(__name__)
 
 class W_FloatObject:
     

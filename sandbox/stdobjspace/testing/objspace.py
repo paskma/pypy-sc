@@ -57,7 +57,7 @@ class ObjSpace:
     def unwrap(self,item):
         return item
 
-    def applicationfile(self,name):
+    def AppFile(self,name):
         thismod = new.module(name+'_app')
         thisglobals = {}
         thislocals = {}
