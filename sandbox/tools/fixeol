@@ -1,3 +1,3 @@
 #! /bin/sh
-
+#just a commen
 find -name "*.py" -exec svn propset svn:eol-style native "{}" ";"
