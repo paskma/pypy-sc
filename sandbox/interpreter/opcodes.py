@@ -7,7 +7,7 @@ applicationfile = pypy.AppFile("opcodes.app.py")
 class unaryoperation:
     def __init__(self, operationname):
         self.operationname = operationname
-    def __call__(self, frame):
+    def __call__(self, f):
         operation = getattr(f.space, self.operationname)
         v = f.valuestack.pop()
         x = operation(v)
@@ -16,7 +16,7 @@ class unaryoperation:
 class binaryoperation:
     def __init__(self, operationname):
         self.operationname = operationname
-    def __call__(self, frame):
+    def __call__(self, f):
         operation = getattr(f.space, self.operationname)
         w = f.valuestack.pop()
         v = f.valuestack.pop()
