@@ -11,7 +11,7 @@ class StdObjSpace(ObjSpace):
 
     PACKAGE_PATH = 'objspace.std'
 
-    class AppFile(interpreter.appfile.AppFile):
+    class AppFile(pypy.interpreter.appfile.AppFile):
         pass
     AppFile.LOCAL_PATH = [PACKAGE_PATH]
 
