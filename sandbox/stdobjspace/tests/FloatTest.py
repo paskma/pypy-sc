@@ -87,7 +87,8 @@ class floatTest(unittest.TestCase):
         y = 2.0
         f1 = fl.W_FloatObject(x)
         f2 = fl.W_FloatObject(y)
-        v,w = fl.float_float_divmod(self.space,f1,f2)
+        wrappedTuple = fl.float_float_divmod(self.space,f1,f2)
+        v,w = self.space.unwrap(wrappedTuple)
         assert (v.floatval,w.floatval) == divmod(x,y)
 
     def powTest(self):
