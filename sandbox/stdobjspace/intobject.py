@@ -2,19 +2,50 @@ from objspace import *
 
 applicationfile = StdObjSpace.applicationfile(__name__)
 
+"""
+The implementation of integers is a bit difficult,
+since integers are currently undergoing the change to turn
+themselves into longs under overflow circumstances.
+The restricted Python does not overflow or throws
+exceptions.
+The definitions in this file are fine, given that
+restricted Python integers behave that way.
+But for testing, the resticted stuff must be run
+by CPython which has different behavior.
+For that reason, I defined an r_int extension class
+for native integers, which tries to behave as in
+RPython, just for test purposes.
+"""
+
+import sys
+
+# belongs to pyconfig.h
+LONG_BIT = 32   # XXX put this elsewhere and make it machine dependant
+                # by some auto configure
+
+WARN_SHIFT = type(1 << LONG_BIT) == int
+
+IS_RESTRICTED = type(sys.maxint*2) is int
+
+if IS_RESTRICTED:
+    from restricted_int import r_int
+
 class W_IntObject:
 
     delegate_once = {}
     
     def __init__(w_self, intval):
-        w_self.intval = intval
+        if IS_RESTRICTED:
+            w_self.intval = intval
+        else:
+            w_self.intval = r_int(intval)
 
     def getattr(w_self, space, w_attrname):
         #w_class = space.wrap("__class__")
-    #w_result = space.richcompare(w_attrname, w_class, "==")
+        #w_result = space.richcompare(w_attrname, w_class, "==")
         #if space.is_true(w_result):
         #    return w_inttype
-        #return applicationfile.call(space, "int_getattr", [w_self, w_attrname])
+        return applicationfile.call(space, "int_getattr", [w_self, w_attrname])
 
 """
 XXX not implemented:
@@ -181,7 +212,7 @@ def _impl_int_int_pow(iv, iw, iz=None):
     temp = iv
     ix = 1
     while iw > 0:
-        if iw & 1 {
+        if iw & 1:
             try:
                 ix = ix*temp
             except OverflowError:
@@ -254,26 +285,21 @@ StdObjSpace.pos.register(space, int_pos, W_IntObject)
 def int_abs(space, w_int1):
     if w_int1.intval >= 0:
         return int_pos(space, w_int1)
-    else
+    else:
         return int_neg(space, w_int1)
 
 StdObjSpace.abs.register(int_abs, W_IntObject)
 
 # this is just an internal test, used where?
 def int_nonzero(space, w_int1):
-    return w_int1->intval != 0
+    return w_int1.intval != 0
 
 def int_invert(space, w_int1):
     x = w_int1.intval
-    a = ~ x
+    a = ~x
     return W_IntObject(a)
 
 StdObjSpace.invert.register(int_invert, W_IntObject)
-
-# belongs to pyconfig.h
-LONG_BIT = 32  # XXX put this elsewhere and make it machine dependant
-
-WARN_SHIFT = type(1 << LONG_BIT) == int
 
 # helper for warning
 # it either does nothing since warning must be implemented,
@@ -346,7 +372,7 @@ def int_int_and(space, w_int1, w_int2):
     res = a & b
     return W_IntObject(res)
 
-StdObjSpace.and.register(int_int_and, W_IntObject, W_IntObject)
+StdObjSpace._and.register(int_int_and, W_IntObject, W_IntObject)
 
 def int_int_xor(space, w_int1, w_int2):
     a = w_int1.intval
@@ -395,7 +421,7 @@ def int_float(space, w_int1):
 
 StdObjSpace.float.register(int_float, W_IntObject)
 
-def int_oct(space.w_int1):
+def int_oct(space, w_int1):
     x = w_int1.intval
     if x < 0:
         ## XXX what about this warning?
@@ -412,7 +438,7 @@ def int_oct(space.w_int1):
 
 StdObjSpace.oct.register(int_oct, W_IntObject)
 
-def int_hex(space.w_int1):
+def int_hex(space, w_int1):
     x = w_int1.intval
     if x < 0:
         ## XXX what about this warning?
