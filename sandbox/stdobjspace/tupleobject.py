@@ -1,3 +1,3 @@
 
-class W_TupleObject:
+class W_TupleObject(object):
     ...
