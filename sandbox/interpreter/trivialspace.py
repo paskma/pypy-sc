@@ -107,17 +107,13 @@ def is_not(w1, w2):
     return w1 is not w2
 
 def exc_match(w1, w2):
-    # from PyErr_GivenExceptionMatches
-    if isinstance(w2, tuple):
-        for exc in w2:
-            if exc_match(w1, exc):
-                return True
+    try:
+        try:
+            raise w1
+        except w2:
+            return True
+    except:
         return False
-    if isinstance(w1, types.InstanceType):
-        w1 = w1.__class__
-    if isinstance(w1, types.ClassType) and isinstance(w2, types.ClassType):
-        return issubclass(w1, w2)
-    return w1 is w2
 
 operation_by_name = {
     '<':  operator.lt,
