@@ -7,16 +7,30 @@ class AppFile:
 
     # absolute name of the parent directory
     ROOTDIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    DEFAULT_PATH_EXT = [('appspace', '.py')]
+    LOCAL_PATH = []
 
-    def __init__(self, filename):
-        "Load and compile the file."
+    def __init__(self, modulename, localpath=[]):
+        "Load and compile the helper file."
         # XXX looking for a pre-compiled file here will be quite essential
         #     when we want to bootstrap the compiler
-        fullfn = os.path.join(AppFile.ROOTDIR, filename)
-        f = open(fullfn, 'r')
+
+        # 'modulename' could be 'package.module' if passed in as __name__
+        # we ignore that package part
+        modulename = modulename.split('.')[-1]
+        path_ext = [(path, '_app.py') for path in localpath + self.LOCAL_PATH]
+        for path, ext in path_ext + self.DEFAULT_PATH_EXT:
+            dirname = os.path.join(self.ROOTDIR, path.replace('.', os.sep))
+            filename = os.path.join(dirname, modulename+ext)
+            if os.path.exists(filename):
+                break
+        else:
+            raise IOError, "cannot locate helper module '%s' in %s" % (
+                modulename, lookuppaths_ext)
+        f = open(filename, 'r')
         src = f.read()
         f.close()
-        self.bytecode = compile(src, filename, 'exec')
+        self.bytecode = compile(src, modulename, 'exec')
 
 
 class Namespace:

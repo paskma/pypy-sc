@@ -1,11 +1,16 @@
+from interpreter.baseobjspace import OperationError
+
 
 class FailedToImplement(Exception):
     "Signals the dispatcher to try harder."
 
+class W_ANY:
+    "Placeholder to allow dispatch on any value."
+
 
 class MultiMethod(object):
 
-    def __init__(self, arity, operatorsymbol):
+    def __init__(self, operatorsymbol, arity):
         "MultiMethod dispatching on the first 'arity' arguments."
         self.arity = arity
         self.operatorsymbol = operatorsymbol
@@ -13,7 +18,8 @@ class MultiMethod(object):
 
     def register(self, function, *types):
         if types in self.dispatch_table:
-            raise ValueError, "we already got one for %r" % (types,)
+            raise error, "we already got an implementation for %r %r" % (
+                self.operatorsymbol, types)
         self.dispatch_table[types] = function
 
     def __get__(self, space, cls):
@@ -59,7 +65,7 @@ class BoundMultiMethod:
     def __call__(self, *args):
         if len(args) < self.multimethod.arity:
             raise TypeError, ("multimethod needs at least %d arguments" %
-                              (self.multimethod.arity))
+                              self.multimethod.arity)
         dispatchargs = args[:self.multimethod.arity]
         extraargs    = args[self.multimethod.arity:]
         initialtypes = tuple([a.__class__ for a in dispatchargs])
@@ -79,9 +85,19 @@ class BoundMultiMethod:
                 if firstfailure is None:
                     firstfailure = e
         if firstfailure is None:
-            message = "unsupported operand type(s) for %s" % (
-                self.multimethod.operatorsymbol,)
+            if len(initialtypes) <= 1:
+                plural = ""
+            else:
+                plural = "s"
+            typenames = [t.__name__ for t in initialtypes]
+            message = "unsupported operand type%s for %s: %s" % (
+                plural, self.multimethod.operatorsymbol,
+                ', '.join(typenames))
             w_value = self.space.wrap(message)
             raise OperationError(self.space.w_TypeError, w_value)
         else:
             raise e
+
+
+class error(Exception):
+    "Thrown to you when you do something wrong with multimethods."

@@ -39,6 +39,7 @@ class TrivialObjSpace(ObjSpace):
     getiter   = iter
     repr      = repr
     pow       = pow
+    hash      = hash
     setattr   = setattr
     delattr   = delattr
     is_true   = operator.truth

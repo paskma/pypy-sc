@@ -4,7 +4,7 @@ from baseobjspace import OperationError, NoValue
 
 
 # dynamically loaded application-space utilities
-appfile = AppFile("interpreter/opcode_app.py")
+appfile = AppFile(__name__, ["interpreter"])
 
 
 class unaryoperation:

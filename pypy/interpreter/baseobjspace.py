@@ -79,8 +79,6 @@ class ObjSpace:
             self.appfile_helpers[applicationfile] = helper
         return helper
 
-    from appfile import AppFile   # make that class available for convenience
-
 
 ## Table describing the regular part of the interface of object spaces,
 ## namely all methods which only take w_ arguments and return a w_ result.
@@ -90,6 +88,7 @@ ObjSpace.MethodTable = [
     ('type',            'type',     1),
     ('checktype',       'type?',    2),
     ('repr',            'repr',     1),
+    ('str',             'str',      1),
     ('getattr',         'getattr',  2),
     ('setattr',         'setattr',  3),
     ('delattr',         'delattr',  2),
@@ -99,6 +98,7 @@ ObjSpace.MethodTable = [
     ('pos',             'unary+',   1),
     ('neg',             'unary-',   1),
     ('not_',            'not',      1),
+    ('abs' ,            'abs',      1),
     ('invert',          '~',        1),
     ('add',             '+',        2),
     ('sub',             '-',        2),
@@ -107,6 +107,7 @@ ObjSpace.MethodTable = [
     ('floordiv',        '//',       2),
     ('div',             'div',      2),
     ('mod',             '%',        2),
+    ('divmod',          'divmod',   2),
     ('pow',             '**',       3),
     ('lshift',          '<<',       2),
     ('rshift',          '>>',       2),
@@ -136,6 +137,7 @@ ObjSpace.MethodTable = [
 #                        wrap(x) -> w_x
 #                    unwrap(w_x) -> x
 #                   is_true(w_x) -> True or False
+#                      hash(w_x) -> int
 #          compare(w_x, w_y, op) -> w_result
 #       newtuple([w_1, w_2,...]) -> w_tuple
 #        newlist([w_1, w_2,...]) -> w_list

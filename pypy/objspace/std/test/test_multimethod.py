@@ -41,7 +41,7 @@ def add_int_string(space, x, y):
     return "add_int_string", x, y
 
 class FakeObjSpace:
-    add = MultiMethod(2, '+')
+    add = MultiMethod('+', 2)
     add.register(add_x_x,           X,   X)
     add.register(add_x_y,           X,   Y)
     add.register(add_y_y,           Y,   Y)

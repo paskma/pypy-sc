@@ -1,4 +1,6 @@
 from objspace import *
+from noneobject import W_NoneObject
+from boolobject import W_BoolObject
 
 applicationfile = StdObjSpace.AppFile(__name__)
 
@@ -42,22 +44,24 @@ class W_IntObject:
         """ representation for debugging purposes """
         return "%s(%d)" % (w_self.__class__.__name__, w_self.intval)
 
-    def getattr(w_self, space, w_attrname):
-        #w_class = space.wrap("__class__")
-        #w_result = space.richcompare(w_attrname, w_class, "==")
-        #if space.is_true(w_result):
-        #    return w_inttype
-        return applicationfile.call(space, "int_getattr", [w_self, w_attrname])
+
+def bool_to_int(space, w_bool):
+    return W_IntObject(int(w_bool.boolval))
+W_BoolObject.delegate_once[W_IntObject] = bool_to_int
+
 
 """
 XXX not implemented:
 free list
-FromLong
-AsLong
 FromString
 FromUnicode
 print
 """
+
+def int_unwrap(space, w_int1):
+    return w_int1.intval
+
+StdObjSpace.unwrap.register(int_unwrap, W_IntObject)
 
 def int_repr(space, w_int1):
     a = w_int1.intval
@@ -70,18 +74,42 @@ int_str = int_repr
 
 StdObjSpace.str.register(int_str, W_IntObject)
 
-def int_int_cmp(space, w_int1, w_int2):
+## deprecated
+## we are going to support rich compare, only
+
+##def int_int_cmp(space, w_int1, w_int2):
+##    i = w_int1.intval
+##    j = w_int2.intval
+##    if i < j:
+##        ret = -1
+##    elif i > j:
+##        ret = 1
+##    else:
+##        ret = 0
+##    return W_IntObject(ret)
+##
+##StdObjSpace.cmp.register(int_int_cmp, W_IntObject, W_IntObject)
+
+def int_int_compare(space, w_int1, w_int2, op):
     i = w_int1.intval
     j = w_int2.intval
-    if i < j:
-        ret = -1
-    elif i > j:
-        ret = 1
+    if   op == '<':  return space.newbool( i < j  )
+    elif op == '<=': return space.newbool( i <= j )
+    elif op == '==': return space.newbool( i == j )
+    elif op == '!=': return space.newbool( i != j )
+    elif op == '>':  return space.newbool( i > j  )
+    elif op == '>=': return space.newbool( i >= j )
+    #elif op == 'in':           # n.a.
+    #elif op == 'not in':       # n.a.
+    #elip op == 'is': is_,      # elsewhere
+    #elif op == 'is not':       # elsewhere
+    #elif op == 'exc match':    # exceptions
     else:
-        ret = 0
-    return W_IntObject(ret)
+        msg = 'integer comparison "%s" not implemented' % op
+        raise FailedToImplement(space.w_TypeError,
+                                space.wrap(msg))
 
-StdObjSpace.cmp.register(int_int_cmp, W_IntObject, W_IntObject)
+StdObjSpace.compare.register(int_int_compare, W_IntObject, W_IntObject)
 
 def int_hash(space, w_int1):
     #/* XXX If this is changed, you also need to change the way
@@ -334,7 +362,7 @@ def int_int_rshift(space, w_int1, w_int2):
         a = a >> b
     return W_IntObject(a)
 
-StdObjSpace.lshift.register(int_int_rshift, W_IntObject, W_IntObject)
+StdObjSpace.rshift.register(int_int_rshift, W_IntObject, W_IntObject)
 
 def int_int_and(space, w_int1, w_int2):
     a = w_int1.intval
@@ -376,21 +404,21 @@ StdObjSpace.or_.register(int_int_or, W_IntObject, W_IntObject)
 def int_int(space, w_int1):
     return w_int1
 
-StdObjSpace.int.register(int_int, W_IntObject)
+#?StdObjSpace.int.register(int_int, W_IntObject)
 
 def int_long(space, w_int1):
     a = w_int1.intval
     x = long(a)  ## XXX should this really be done so?
     return space.newlong(x)
 
-StdObjSpace.long.register(int_long, W_IntObject)
+#?StdObjSpace.long.register(int_long, W_IntObject)
 
 def int_float(space, w_int1):
     a = w_int1.intval
     x = float(a)
     return space.newdouble(x)
 
-StdObjSpace.float.register(int_float, W_IntObject)
+#?StdObjSpace.float.register(int_float, W_IntObject)
 
 def int_oct(space, w_int1):
     x = w_int1.intval
@@ -407,7 +435,7 @@ def int_oct(space, w_int1):
         ret = "0%lo" % x
     return space.wrap(ret)
 
-StdObjSpace.oct.register(int_oct, W_IntObject)
+#?StdObjSpace.oct.register(int_oct, W_IntObject)
 
 def int_hex(space, w_int1):
     x = w_int1.intval
@@ -424,4 +452,4 @@ def int_hex(space, w_int1):
         ret = "0x%lx" % x
     return space.wrap(ret)
 
-StdObjSpace.hex.register(int_hex, W_IntObject)
+#?StdObjSpace.hex.register(int_hex, W_IntObject)
