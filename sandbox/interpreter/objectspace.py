@@ -15,12 +15,7 @@ class NoValue(Exception):
 
 
 
-class HelperBytecode:
-    def __init__(self, source, filename='<helper>'):
-        self.bytecode = compile(source, filename, 'exec')
-
-
-class AppFile(HelperBytecode):
+class AppFile:
     """Dynamic loader of a set of Python functions and objects that
     should work at the application level (conventionally in .app.py files)"""
 
@@ -35,26 +30,15 @@ class AppFile(HelperBytecode):
         f = open(fullfn, 'r')
         src = f.read()
         f.close()
-        HelperBytecode.__init__(self, src, filename)
+        self.bytecode = compile(src, filename, 'exec')
 
 
-class Module:
+class Namespace:
 
-    def __init__(self, space, appfile=None):
+    def __init__(self, space):
         self.space = space
         ec = space.getexecutioncontext()
         self.w_namespace = ec.make_standard_w_globals()
-        if appfile is not None:
-            self.loadappfile(appfile, ec)
-
-    def loadappfile(self, appfile, ec=None):
-        # initialize the module by running the bytecode in a new
-        # dictionary, in a new execution context
-        if ec is None:
-            ec = self.space.getexecutioncontext()
-        frame = pyframe.PyFrame(self.space, appfile.bytecode,
-                                self.w_namespace, self.w_namespace)
-        ec.eval_frame(frame)
 
     def get(self, objname):
         "Returns a wrapped copy of an object by name."
@@ -63,10 +47,26 @@ class Module:
         return w_obj
 
     def call(self, functionname, argumentslist):
+        "Call a module function."
         w_function = self.get(functionname)
         w_arguments = self.space.newtuple(argumentslist)
         w_keywords = self.space.newdict([])
         return self.space.apply(w_function, w_arguments, w_keywords)
+
+    def runbytecode(self, bytecode):
+        # initialize the module by running the bytecode in a new
+        # dictionary, in a new execution context
+        ec = self.space.getexecutioncontext()
+        frame = pyframe.PyFrame(self.space, bytecode,
+                                self.w_namespace, self.w_namespace)
+        ec.eval_frame(frame)
+
+
+class AppHelper(Namespace):
+
+    def __init__(self, space, bytecode):
+        Namespace.__init__(self, space)
+        self.runbytecode(bytecode)
 
 
 ##################################################################
@@ -81,8 +81,8 @@ class ObjectSpace:
         self.w_modules  = self.newdict([])
         self.appfile_helpers = {}
         self.initialize()
-        import builtins
-        builtins.init(self)
+        #import builtins
+        #builtins.init(self)
 
     def initialize(self):
         """Abstract method that should put some minimal content into the
@@ -104,7 +104,7 @@ class ObjectSpace:
         try:
             helper = self.appfile_helpers[applicationfile]
         except KeyError:
-            helper = Module(self, applicationfile)
+            helper = AppHelper(self, applicationfile.bytecode)
             self.appfile_helpers[applicationfile] = helper
         return helper
 

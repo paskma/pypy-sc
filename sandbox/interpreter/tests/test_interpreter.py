@@ -6,11 +6,13 @@ import objectspace, trivialspace, executioncontext
 
 
 def testcode(code, functionname, args):
-    helperbytecode = objectspace.HelperBytecode(code, '<test>')
+    bytecode = compile(code, '<test>', 'exec')
 
     space = trivialspace.TrivialSpace()
+    apphelper = objectspace.AppHelper(space, bytecode)
+    
     wrappedargs = [space.wrap(arg) for arg in args]
-    w_output = space.gethelper(helperbytecode).call(functionname, wrappedargs)
+    w_output = apphelper.call(functionname, wrappedargs)
     return space.unwrap(w_output)
 
 
@@ -49,7 +51,8 @@ def f():
     try:
         raise Exception, 1
     except Exception, e:
-        return e.args[0]''', 'f', [])
+        return e.args
+''', 'f', [])
         self.assertEquals(x, 1)
 
 
