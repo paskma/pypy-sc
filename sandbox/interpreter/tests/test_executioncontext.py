@@ -9,9 +9,11 @@ class TestExecutionContext(unittest.TestCase):
 
     def test_trivial1(self):
         # build frame
-        space = trivialspace
+        space = TrivialSpace()
 
         ec = ExecutionContext(space)
+
+        space.initialize(ec)
         
         bytecode = compile('def f(x): return x+1', '', 'exec').co_consts[0]
         w_globals = space.wrap({'__builtins__': __builtins__})
