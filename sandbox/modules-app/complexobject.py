@@ -1,5 +1,4 @@
 import re
-import errno
 import math
 import types
 import warnings
@@ -19,6 +18,7 @@ class complex(object):
         if type(real) == types.StringType and imag is not None:
             msg = "complex() can't take second arg if first is a string"
             raise TypeError, msg
+
         if type(imag) == types.StringType:
             msg = "complex() second arg can't be a string"
             raise TypeError, msg
@@ -90,12 +90,14 @@ class complex(object):
 
 
     def __add__(self, other):
+        self, other = self.__coerce__(other)
         real = self.real + other.real
         imag = self.imag + other.imag
         return complex(real, imag)
 
 
     def __sub__(self, other):
+        self, other = self.__coerce__(other)
         real = self.real - other.real
         imag = self.imag - other.imag
         return complex(real, imag)
@@ -127,7 +129,6 @@ class complex(object):
         if abs_breal >= abs_bimag:
             # divide tops and bottom by other.real
             if abs_breal == 0.0:
-                errnum = errno.EDOM
                 real = imag = 0.0
             else:
                 ratio = other.imag / other.real
@@ -145,12 +146,36 @@ class complex(object):
         return complex(real, imag)
 
 
+    def __d_i_v__(self, other):
+        # the canonical alternative, which is said to have problems 
+        # with floating point precision...
+        if other.__class__ != complex:
+            return complex(self.real/other, self.imag/other)
+
+        a, b = self.real, self.imag
+        c, d = other.real, other.imag
+        zr = a*c + b*d
+        zi = b*c - a*d
+        n = c*c + d*d
+
+        return complex(zr/n, zi/n)
+
+
+    def __floordiv__(self, other):
+        return self / other
+        
+        
+    def __truediv__(self, other):
+        return self / other
+        
+
     def __mod__(self, other):
-        errnum = 0
-        div = self/other # The raw divisor value.
-        if errnum == errno.EDOM:
+        warnings.warn("complex divmod(), // and % are deprecated", DeprecationWarning)
+
+        if other.real == 0. and other.imag == 0.:
             raise ZeroDivisionError, "complex remainder"
 
+        div = self/other # The raw divisor value.
         div = complex(math.floor(div.real), 0.0)
         mod = self - div*other
 
@@ -163,17 +188,13 @@ class complex(object):
     def __divmod__(self, other):
         warnings.warn("complex divmod(), // and % are deprecated", DeprecationWarning)
 
-        errnum = 0
-        div = self/other #  The raw divisor value
-        if errnum == errno.EDOM:
-            raise ZeroDivisionError, "complex divmod()"
+        if other.real == 0. and other.imag == 0.:
+            raise ZeroDivisionError, "complex remainder"
 
+        div = self/other # The raw divisor value.
         div = complex(math.floor(div.real), 0.0)
         mod = self - div*other
-        d = div # complex(div)
-        m = mod # complex(mod)
-
-        return d, m
+        return div, mod
 
 
     def __pow__(self, other):
@@ -186,8 +207,6 @@ class complex(object):
             real = 1.
             imag = 0.
         elif a.real == 0. and a.imag == 0.:
-            if b.imag != 0. or b.real < 0.:
-                errnum = errno.EDOM
             real = 0.
             imag = 0.
         else:
@@ -236,22 +255,20 @@ class complex(object):
         raise TypeError, "number coercion failed"
 
 
-    def __int__(self):
-        raise TypeError, "can't convert complex to int; use e.g. int(abs(z))"
-
-
-    def __long__(self):
-        raise TypeError, "can't convert complex to long; use e.g. long(abs(z))"
-
-
-    def __float__(self):
-        raise TypeError, "can't convert complex to float; use e.g. float(abs(z))"
-
-
     def conjugate(self):
         return complex(self.real, -self.imag)
 
 
+    def __ne__(self, other):
+        if self.real != other.real:
+            return 1
+        if self.imag != other.imag:
+            return 1
+        return 0            
+
+
+    # unsupported operations
+    
     def __lt__(self, other):
         raise TypeError, "cannot compare complex numbers using <, <=, >, >="
 
@@ -264,40 +281,93 @@ class complex(object):
         raise TypeError, "cannot compare complex numbers using <, <=, >, >="
 
         
-    def __get__(self, other):
+    def __ge__(self, other):
         raise TypeError, "cannot compare complex numbers using <, <=, >, >="
 
 
-    def __ne__(self, other):
-        if self.real != other.real:
-            return 1
-        if self.imag != other.imag:
-            return 1
-        return 0            
+    def __int__(self):
+        raise TypeError, "can't convert complex to int; use e.g. int(abs(z))"
 
+
+    def __long__(self):
+        raise TypeError, "can't convert complex to long; use e.g. long(abs(z))"
+
+
+    def __float__(self):
+        raise TypeError, "can't convert complex to float; use e.g. float(abs(z))"
+
+
+    def _unsupportedOp(self, other, op):
+        selfTypeName = type(self).__name__
+        otherTypeName = type(other).__name__
+        args = (op, selfTypeName, otherTypeName)
+        msg = "unsupported operand type(s) for %s: '%s' and '%s'" % args
+        raise TypeError, msg
+
+
+    def __and__(self, other):
+        self._unsupportedOp(self, other, "&")
+
+
+    def __or__(self, other):
+        self._unsupportedOp(self, other, "|")
+
+
+    def __xor__(self, other):
+        self._unsupportedOp(self, other, "^")
+
+
+    def __rshift__(self, other):
+        self._unsupportedOp(self, other, ">>")
+
+
+    def __lshift__(self, other):
+        self._unsupportedOp(self, other, "<<")
+
+
+    def __iand__(self, other):
+        self._unsupportedOp(self, other, "&=")
+
+
+    def __ior__(self, other):
+        self._unsupportedOp(self, other, "|=")
+
+
+    def __ixor__(self, other):
+        self._unsupportedOp(self, other, "^=")
+
+
+    def __irshift__(self, other):
+        self._unsupportedOp(self, other, ">>=")
+
+
+    def __ilshift__(self, other):
+        self._unsupportedOp(self, other, "<<=")
+
+
+    # augmented assignment operations
+    
+    def __iadd__(self, other):
+        return self + other
+    
+
+    def __isub__(self, other):
+        return self - other
+    
+
+    def __imul__(self, other):
+        return self * other
+    
+
+    def __idiv__(self, other):
+        return self / other
+    
 
 #    def __new__(self, ...):
 #        pass
 
-#    def __floordiv__(self, value):
-#        pass
 
+# test mod, divmod
 
-# test mod, coerce, divmod
+# add radd, rsub, rmul, rdiv...
 
-
-# complex_subtype_from_c_complex
-# PyComplex_FromCComplex
-# complex_subtype_from_doubles
-# PyComplex_FromDoubles
-# PyComplex_RealAsDouble
-# PyComplex_ImagAsDouble
-# PyComplex_AsCComplex
-# complex_dealloc
-# complex_to_buf
-# complex_print
-# complex_classic_div
-# complex_int_div
-# complex_richcompare
-# complex_subtype_from_string
-# complex_new

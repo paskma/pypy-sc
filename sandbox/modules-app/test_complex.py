@@ -131,11 +131,14 @@ for x0 in xrange(-3, 3):
                     except AssertionError:
                         print "c: (%s/%s) = (%s)" % (z0c, z1c, qc)
                         print "py:(%s/%s) = (%s)" % (z0p, z1p, qp)
- 
+                
+                # divmod(9,4) = 2,1
                 if not equal(z1c, complex(0,0)): 
                     try:
                         ddc, mmc = divmod(z0c, z1c)
+                        assert ddc*z1c + mmc == z0c
                         ddp, mmp = divmod(z0p, z1p)
+                        # assert ddp*z1p + mmp == z0p
                         assert equal(ddc, ddp)
                         assert equal(mmc, mmp)
                     except AssertionError:
@@ -175,3 +178,28 @@ for x0 in xrange(-3, 3):
                 assert equal(mc/z0c, mp/z0p)
                 assert equal(mc/z1c, mp/z1p)
                 
+
+
+
+def dm(self, other):
+    div = self/other # The raw divisor value.
+    print div
+    div = complex(math.floor(div.real), 0.0)
+    print div
+    mod = self - div*other
+    print mod
+    return div, mod
+
+
+def testNumericalInstability():
+    x, y = -3+1j, -1-3j
+    print x, y, divmod(x, y)
+    print x/y
+    print math.floor((x/y).real)+0j
+    print
+
+    x, y = complex(-3,1), complex(-1,-3)
+    print x, y
+    dm(x, y)
+
+
