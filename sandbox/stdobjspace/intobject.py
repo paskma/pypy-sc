@@ -3,6 +3,8 @@ from objspace import *
 
 
 class W_IntObject:
+
+    delegate_once = {}
     
     def __init__(w_self, intval):
         w_self.intval = intval
@@ -58,8 +60,9 @@ def int_int_truediv(space, w_int1, w_int2):
     try:
         z = x / y   # XXX make sure this is the new true division
     except ZeroDivisionError:
-		raise   # we have to implement the exception or it will be ignored
-	# no overflow
+        raise OperationError(space.w_ZeroDivisionError,
+                             space.wrap("integer division by zero"))
+    # no overflow
     return W_IntObject(z)
 
 def int_int_mod(space, w_int1, w_int2):
@@ -90,5 +93,4 @@ if 1 / 2 == 1 // 2:
 else:
 	int_int_div = int_int_truediv
 
-StdObjSpace.add.register(int_add, W_IntObject, w_IntObject)
-
+StdObjSpace.add.register(int_add, W_IntObject, W_IntObject)
