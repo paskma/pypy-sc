@@ -41,7 +41,7 @@ class IntObjSpace(ConcreteSpace):
         import sys
         return self.from_long(sys.maxint)
     
-class FloatObjSpace(ConceteSpace):
+class FloatObjSpace(ConcreteSpace):
     __slots__ = []
     def check(self, ob):
         return isinstance(ob, self.space.W_FloatObject)
