@@ -1,9 +1,9 @@
-import dis, pypy, pyframe
+import dis, pyframe, objectspace
 from pypy import OperationError
 
 
 # dynamically loaded application-space utilities
-applicationfile = pypy.AppFile("opcodes.app.py")
+appfile = objectspace.AppFile("interpreter/opcodes.app.py")
 
 
 class unaryoperation:
@@ -209,23 +209,23 @@ def DELETE_SUBSCR(f):
 
 def PRINT_EXPR(f):
     w_expr = f.valuestack.pop()
-    applicationfile.call(f.space, "print_expr", [w_expr])
+    f.space.gethelper(appfile).call("print_expr", [w_expr])
 
 def PRINT_ITEM_TO(f):
     w_stream = f.valuestack.pop()
     w_item = f.valuestack.pop()
-    applicationfile.call(f.space, "print_item_to", [w_item, w_stream])
+    f.space.gethelper(appfile).call("print_item_to", [w_item, w_stream])
 
 def PRINT_ITEM(f):
     w_item = f.valuestack.pop()
-    applicationfile.call(f.space, "print_item", [w_item])
+    f.space.gethelper(appfile).call("print_item", [w_item])
 
 def PRINT_NEWLINE_TO(f):
     w_stream = f.valuestack.pop()
-    applicationfile.call(f.space, "print_newline_to", [w_stream])
+    f.space.gethelper(appfile).call("print_newline_to", [w_stream])
 
 def PRINT_NEWLINE(f):
-    applicationfile.call(f.space, "print_newline", [])
+    f.space.gethelper(appfile).call("print_newline", [])
 
 def BREAK_LOOP(f):
     raise pyframe.SBreakLoop
@@ -238,21 +238,23 @@ def RAISE_VARARGS(f, nbargs):
     # but not to actually raise it, because we cannot use the 'raise'
     # statement to implement RAISE_VARARGS
     if nbargs == 0:
-        w_resulttuple = applicationfile.call(f.space, "prepare_raise0")
+        w_resulttuple = f.space.gethelper(appfile).call("prepare_raise0")
     elif nbargs == 1:
         w_exc = f.valuestack.pop()
-        w_resulttuple = applicationfile.call(f.space, "prepare_raise1", [w_exc])
+        w_resulttuple = f.space.gethelper(appfile).call("prepare_raise1",
+                                                        [w_exc])
     elif nbargs == 2:
         w_value = f.valuestack.pop()
         w_exc   = f.valuestack.pop()
-        w_resulttuple = applicationfile.call(f.space, "prepare_raise2",
-                                             [w_exc, w_value])
+        w_resulttuple = f.space.gethelper(appfile).call("prepare_raise2",
+                                                        [w_exc, w_value])
     elif nbargs == 3:
         w_traceback = f.valuestack.pop()
         w_value     = f.valuestack.pop()
         w_exc       = f.valuestack.pop()
-        w_resulttuple = applicationfile.call(f.space, "prepare_raise3",
-                                             [w_exc, w_value, w_traceback])
+        w_resulttuple = f.space.gethelper(appfile).call("prepare_raise3",
+                                                        [w_exc, w_value,
+                                                         w_traceback])
     else:
         raise pyframe.BytecodeCorruption, "bad RAISE_VARARGS oparg"
     w_exception, w_value, w_traceback = pyframe.unpackiterable(f.space,
@@ -276,9 +278,9 @@ def EXEC_STMT(f):
     w_locals  = f.valuestack.pop()
     w_globals = f.valuestack.pop()
     w_prog    = f.valuestack.pop()
-    applicationfile.call(f.space, "exec_statement",
-                         [w_prog, w_globals, w_locals,
-                          f.w_builtins, f.w_globals, f.w_locals])
+    f.space.gethelper(appfile).call("exec_statement",
+                                    [w_prog, w_globals, w_locals,
+                                     f.w_builtins, f.w_globals, f.w_locals])
 
 def POP_BLOCK(f):
     block = f.blockstack.pop()
@@ -297,8 +299,8 @@ def BUILD_CLASS(f):
     w_methodsdict = f.valuestack.pop()
     w_bases       = f.valuestack.pop()
     w_name        = f.valuestack.pop()
-    w_newclass = applicationfile.call(f.space, "build_class",
-                                      [w_methodsdict, w_bases, w_name])
+    w_newclass = f.space.gethelper(appfile).call(
+        "build_class", [w_methodsdict, w_bases, w_name])
     f.push(w_newclass)
 
 def STORE_NAME(f, varindex):
@@ -326,7 +328,7 @@ def UNPACK_SEQUENCE(f, itemcount):
             else:
                 plural = "s"
             message = "need more than %d value%s to unpack" % (i, plural)
-            w_exceptionclass = applicationfile.findobject(f.space, "ValueError")
+            w_exceptionclass = f.space.w_ValueError
             w_exceptionvalue = f.space.wrap(message)
             raise OperationError(w_exceptionclass, w_exceptionvalue)
         items.append(w_item)
@@ -336,7 +338,7 @@ def UNPACK_SEQUENCE(f, itemcount):
     except pypy.NoValue:
         pass
     else:
-        w_exceptionclass = applicationfile.findobject(f.space, "ValueError")
+        w_exceptionclass = f.space.w_ValueError
         w_exceptionclass = f.space.wrap("too many values to unpack")
         raise OperationError(w_exceptionclass, w_exceptionvalue)
     items.reverse()
@@ -372,8 +374,8 @@ def DELETE_GLOBAL(f, nameindex):
 def LOAD_NAME(f, nameindex):
     varname = f.getname(nameindex)
     w_varname = f.space.wrap(varname)
-    w_value = applicationfile.call(f.space, "load_name", [w_varname,
-                                   f.w_locals, f.w_globals, f.w_builtins])
+    w_value = f.space.gethelper(appfile).call(
+        "load_name", [w_varname, f.w_locals, f.w_globals, f.w_builtins])
     f.valuestack.push(w_value)
 
 def LOAD_GLOBAL(f, nameindex):
@@ -384,7 +386,7 @@ def LOAD_GLOBAL(f, nameindex):
     except OperationError, e:
         # catch KeyErrors
         w_exc_class, w_exc_value = e.args
-        w_KeyError = applicationfile.findobject(f.space, "KeyError")
+        w_KeyError = f.space.w_KeyError
         w_match = f.space.richcompare(w_exc_class, w_KeyError, "exc match")
         if not f.space.is_true(w_match):
             raise
@@ -398,7 +400,7 @@ def LOAD_GLOBAL(f, nameindex):
             if not f.space.is_true(w_match):
                 raise
             message = "global name '%s' is not defined" % varname
-            w_exc_class = applicationfile.findobject(f.space, "NameError")
+            w_exc_class = f.space.w_NameError
             w_exc_value = f.space.wrap(message)
             raise OperationError(w_exc_class, w_exc_value)
     f.valuestack.push(w_value)
@@ -415,8 +417,8 @@ def LOAD_CLOSURE(f, varindex):
     #     syntactically nested frames?
     varname = f.getfreevarname(varindex)
     w_varname = f.space.wrap(varname)
-    w_value = applicationfile.call(f.space, "load_closure",
-                                   [f.w_locals, w_varname])
+    w_value = f.space.gethelper(appfile).call("load_closure",
+                                              [f.w_locals, w_varname])
     f.valuestack.push(w_value)
 
 def LOAD_DEREF(f, varindex):
@@ -473,21 +475,20 @@ def IMPORT_NAME(f, nameindex):
     modulename = f.getname(nameindex)
     w_modulename = f.space.wrap(modulename)
     w_fromlist = f.valuestack.pop()
-    w_obj = applicationfile.call(f.space, "import_name",
-                                 [f.w_builtins, w_modulename, f.w_globals,
-                                  f.w_locals, w_fromlist])
+    w_obj = f.space.gethelper(appfile).call(
+        "import_name", [f.w_builtins,
+                        w_modulename, f.w_globals, f.w_locals, w_fromlist])
     f.valuestack.push(w_obj)
 
 def IMPORT_STAR(f):
     w_module = f.valuestack.pop()
-    applicationfile.call(f.space, "import_star",
-                         [w_module, f.w_locals])
+    f.space.gethelper(appfile).call("import_star", [w_module, f.w_locals])
 
 def IMPORT_FROM(f, nameindex):
     name = f.getname(nameindex)
     w_name = f.space.wrap(name)
     w_module = f.valuestack.top()
-    w_obj = applicationfile.call(f.space, "import_from", [w_module, w_name])
+    w_obj = f.space.gethelper(appfile).call("import_from", [w_module, w_name])
     f.valuestack.push(w_obj)
 
 def JUMP_FORWARD(f, stepby):
@@ -555,11 +556,11 @@ def call_function_extra(f, oparg, with_varargs, with_varkw):
     w_arguments = f.space.newtuple(arguments)
     w_keywords  = f.space.newdict(keywords)
     if with_varargs:
-        w_arguments = applicationfile.call(f.space, "concatenate_arguments",
-                                           [w_arguments, w_varargs])
+        w_arguments = f.space.gethelper(appfile).call("concatenate_arguments",
+                                                      [w_arguments, w_varargs])
     if with_varkw:
-        w_keywords  = applicationfile.call(f.space, "concatenate_keywords",
-                                           [w_keywords,  w_varkw])
+        w_keywords  = f.space.gethelper(appfile).call("concatenate_keywords",
+                                                      [w_keywords,  w_varkw])
     w_result = f.space.apply(w_function, w_arguments, w_keywords)
     f.valuestack.push(w_result)
 
