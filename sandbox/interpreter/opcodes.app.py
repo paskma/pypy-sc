@@ -1,5 +1,16 @@
-import sys
+import sys, new
 
+def prepare_raise0():
+    ...
+def prepare_raise1(type):
+    ...
+def prepare_raise2(type,value):
+    ...
+def prepare_raise3(type,value, traceback):
+    ...
+    
+def build_class(methods, bases, name):
+    return classobj(name, bases, methods)
 
 def print_expr(x):
     try:
