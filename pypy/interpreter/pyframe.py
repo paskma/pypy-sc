@@ -50,7 +50,7 @@ class PyFrame:
                             opcode.dispatch_noarg(self, op)
 
                     except baseobjspace.OperationError, e:
-#                        executioncontext.exception_trace(e)
+                        #executioncontext.exception_trace(e)
                         # convert an OperationError into a reason to unroll
                         # the stack
                         if e.w_traceback is None:

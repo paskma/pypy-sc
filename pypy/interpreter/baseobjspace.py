@@ -13,6 +13,8 @@ class OperationError(Exception):
         self.w_type = w_type
         self.w_value = w_value
         self.w_traceback = w_traceback
+        ### DEBUG DUMP ###
+        #self.nicetraceback(None)
     
     def __str__(self):
         "Convenience for tracebacks."
@@ -21,13 +23,16 @@ class OperationError(Exception):
         "Dump a nice custom traceback to sys.stderr."
         import sys, traceback
         tb = sys.exc_info()[2]
-        exc = space.unwrap(self.w_type)
-        value = space.unwrap(self.w_value)
+        if space is not None:
+            exc = space.unwrap(self.w_type)
+            value = space.unwrap(self.w_value)
+            msg = traceback.format_exception_only(exc, value)
+        else:
+            msg = '%r: %r' % (self.w_type, self.w_value)
         print >> sys.stderr, "*"*10, " OperationError ", "*"*10
         traceback.print_tb(tb)
 ##         if self.w_traceback:
 ##             traceback.print_tb(space.unwrap(self.w_traceback))
-        msg = traceback.format_exception_only(exc, value)
         print >> sys.stderr, "[Application-level]", ''.join(msg).strip()
         print >> sys.stderr, "*"*10
 

@@ -39,7 +39,7 @@ def LOAD_FAST(f, varindex):
     f.valuestack.push(w_value)
 
 def LOAD_CONST(f, constindex):
-    w_const = f.getconstant(constindex)
+    w_const = f.space.wrap(f.getconstant(constindex))
     f.valuestack.push(w_const)
 
 def STORE_FAST(f, varindex):

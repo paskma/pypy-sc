@@ -14,7 +14,7 @@ def decode_frame_arguments(args, kws, defs, closure, codeobject):
     varargs_tuple = ()
     
     argdict = {}
-    parameter_names = codeobject.co_varnames[0:codeobject.co_argcount]
+    parameter_names = codeobject.co_varnames[:codeobject.co_argcount]
     
     # Normal arguments
     for i in range(len(args)):
@@ -76,5 +76,3 @@ def decode_frame_arguments(args, kws, defs, closure, codeobject):
     if varkeywords:
         a.append(newkw)
     return tuple(a)
-
-
