@@ -18,14 +18,14 @@ StdObjSpace.float.register(float_float, W_FloatObject)
 def float_repr(space, w_float):
     ## %reimplement%
     # uses CPython "repr" builtin function
-    return space.wrap(repr(w_float.floatvalue))
+    return space.wrap(repr(w_float.floatval))
 
 StdObjSpace.repr.register(float_repr, W_FloatObject)
 
 def float_str(space, w_float):
     ## %reimplement%
     # uses CPython "str" builtin function
-    return space.wrap(str(w_float.floatvalue))
+    return space.wrap(str(w_float.floatval))
 
 StdObjSpace.str.register(float_str, W_FloatObject)
 
@@ -44,7 +44,7 @@ StdObjSpace.cmp.register(float_float_compare, W_FloatObject, W_FloatObject)
 def float_hash(space,w_value):
     ## %reimplement%
     # real Implementation should be taken from _Py_HashDouble in object.c
-    return space.wrap(hash(w_value.floatvalue))
+    return space.wrap(hash(w_value.floatval))
 
 StdObjSpace.hash.register(float_hash, W_FloatObject)
 
@@ -137,7 +137,7 @@ def float_float_divmod(space, w_float1, w_float2):
     except FloatingPointError:
         raise FailedToImplement(space.w_FloatingPointError, space.wrap("float division"))
 
-    return space.newtuple([floordiv,mod])
+    return space.newtuple([W_FloatObject(floordiv),W_FloatObject(mod)])
 
 StdObjSpace.divmod.register(float_float_divmod, W_FloatObject, W_FloatObject)
 
