@@ -42,8 +42,9 @@ class Namespace:
     def runbytecode(self, bytecode):
         # initialize the module by running the bytecode in a new
         # dictionary, in a new execution context
+        from pyframe import PyFrame
         ec = self.space.getexecutioncontext()
-        frame = pyframe.PyFrame(self.space, bytecode,
+        frame = PyFrame(self.space, bytecode,
                                 self.w_namespace, self.w_namespace)
         ec.eval_frame(frame)
 

@@ -6,18 +6,21 @@ def testcode(code, functionname, args, space=None):
     """Compile and run the given code string, and then call its function
     named by 'functionname' with arguments 'args'.
     The optional 'space' argument can specify an alternate object space."""
-    from interpreter.pyframe import PyFrame
-    from interpreter import baseobjspace, executioncontext
+    from interpreter import baseobjspace, executioncontext, appfile
     if space is None:
         from objspace.trivial import TrivialObjSpace
         space = TrivialObjSpace()
 
     bytecode = compile(code, '<test>', 'exec')
-    apphelper = baseobjspace.AppHelper(space, bytecode)
+    apphelper = appfile.AppHelper(space, bytecode)
     
     wrappedargs = [space.wrap(arg) for arg in args]
-    w_output = apphelper.call(functionname, wrappedargs)
-    return space.unwrap(w_output)
+    try:
+        w_output = apphelper.call(functionname, wrappedargs)
+    except baseobjspace.OperationError, e:
+        print e.w_traceback
+    else:
+        return space.unwrap(w_output)
 
 
 class TestInterpreter(unittest.TestCase):
@@ -71,6 +74,12 @@ def f(a):
         self.assertEquals(testcode(code, 'f', [0]), 2)
         self.assertEquals(testcode(code, 'f', [1]), 2)
 
+    def test_raise(self):
+        x = testcode('''
+def f():
+    raise 1
+''', 'f', [])
+            
 
 if __name__ == '__main__':
     unittest.main()

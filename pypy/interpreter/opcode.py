@@ -241,26 +241,25 @@ def RAISE_VARARGS(f, nbargs):
     if nbargs == 0:
         w_resulttuple = f.space.gethelper(appfile).call("prepare_raise0")
     elif nbargs == 1:
-        w_exc = f.valuestack.pop()
+        w_type = f.valuestack.pop()
         w_resulttuple = f.space.gethelper(appfile).call(
-            "prepare_raise", [w_exc, None, None])
+            "prepare_raise", [w_type, None, None])
     elif nbargs == 2:
         w_value = f.valuestack.pop()
-        w_exc   = f.valuestack.pop()
+        w_type  = f.valuestack.pop()
         w_resulttuple = f.space.gethelper(appfile).call(
-            "prepare_raise", [w_exc, w_value, None])
+            "prepare_raise", [w_type, w_value, None])
     elif nbargs == 3:
         w_traceback = f.valuestack.pop()
         w_value     = f.valuestack.pop()
-        w_exc       = f.valuestack.pop()
+        w_type      = f.valuestack.pop()
         w_resulttuple = f.space.gethelper(appfile).call(
-            "prepare_raise", [w_exc, w_value, w_traceback])
+            "prepare_raise", [w_type, w_value, w_traceback])
     else:
         raise pyframe.BytecodeCorruption, "bad RAISE_VARARGS oparg"
-    w_exception, w_value, w_traceback = pyframe.unpackiterable(f.space,
-                                                               w_resulttuple)
-    # XXX use the traceback too!
-    raise OperationError(w_exception, w_value)
+    w_type, w_value, w_traceback = pyframe.unpackiterable(
+        f.space, w_resulttuple)
+    raise OperationError(w_type, w_value, w_traceback)
 
 def LOAD_LOCALS(f):
     f.valuestack.push(f.w_locals)
@@ -385,9 +384,8 @@ def LOAD_GLOBAL(f, nameindex):
         w_value = f.space.getitem(f.w_globals, w_varname)
     except OperationError, e:
         # catch KeyErrors
-        w_exc_class, w_exc_value = e.args
         w_KeyError = f.space.w_KeyError
-        w_match = f.space.compare(w_exc_class, w_KeyError, "exc match")
+        w_match = f.space.compare(e.w_type, w_KeyError, "exc match")
         if not f.space.is_true(w_match):
             raise
         # we got a KeyError, now look in the built-ins
@@ -395,14 +393,13 @@ def LOAD_GLOBAL(f, nameindex):
             w_value = f.space.getitem(f.w_builtins, w_varname)
         except OperationError, e:
             # catch KeyErrors again
-            w_exc_class, w_exc_value = e.args
-            w_match = f.space.compare(w_exc_class, w_KeyError, "exc match")
+            w_match = f.space.compare(e.w_type, w_KeyError, "exc match")
             if not f.space.is_true(w_match):
                 raise
             message = "global name '%s' is not defined" % varname
-            w_exc_class = f.space.w_NameError
+            w_exc_type = f.space.w_NameError
             w_exc_value = f.space.wrap(message)
-            raise OperationError(w_exc_class, w_exc_value)
+            raise OperationError(w_exc_type, w_exc_value)
     f.valuestack.push(w_value)
 
 def DELETE_FAST(f, varindex):

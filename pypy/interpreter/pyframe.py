@@ -42,11 +42,17 @@ class PyFrame:
                             opcode.dispatch_noarg(self, op)
 
                     except baseobjspace.OperationError, e:
-                        executioncontext.exception_trace(e)
+#                        executioncontext.exception_trace(e)
                         # convert an OperationError into a reason to unroll
                         # the stack
-                        w_exc_class, w_exc_value = e.args
-                        raise SApplicationException(w_exc_class, w_exc_value)
+                        if e.w_traceback is None:
+                            w_traceback = []
+                        else:
+                            w_traceback = e.w_traceback
+
+                        w_traceback.append(self)
+                        raise SApplicationException(
+                            e.w_type, e.w_value, w_traceback)
                     # XXX some other exceptions could be caught here too,
                     #     like KeyboardInterrupt
 
@@ -228,22 +234,18 @@ class SApplicationException(StackUnroller):
         if isinstance(block, ExceptBlock):
             # push the exception to the value stack for inspection by the
             # exception handler (the code after the except:)
-            w_exc_class, w_exc_value = self.args
+            w_exc_type, w_exc_value, w_exc_traceback = self.args
             # XXX trackback?
-            if 1:
-                frame.valuestack.push(w_exc_value) # HACK HACK XXX
+            frame.valuestack.push(w_exc_traceback)
             frame.valuestack.push(w_exc_value)
-            frame.valuestack.push(w_exc_class)
+            frame.valuestack.push(w_exc_type)
             frame.next_instr = block.handlerposition   # jump to the handler
             frame.blockstack.push(NoExceptionInFinally())
             raise StopUnrolling
 
     def emptystack(self, frame):
         # propagate the exception to the caller
-        w_exc_class, w_exc_value = self.args
-        STOPSTOPSTOP
-        # XXX traceback?
-        raise baseobjspace.OperationError(w_exc_class, w_exc_value)
+        raise baseobjspace.OperationError(*self.args)
 
 class SBreakLoop(StackUnroller):
     """Signals a 'break' statement."""
@@ -327,7 +329,7 @@ def unpackiterable(space, w_iterable):
     """Utility function unpacking any finite-length iterable object into a
     real (interpreter-level) list."""
     w_iterator = space.getiter(w_iterable)
-    vitems = []
+    items = []
     while True:
         try:
             w_item = space.iternext(w_iterator)

@@ -7,9 +7,10 @@ class OperationError(Exception):
     
     Arguments are the object-space exception class and value."""
 
-    def __init__(self, w_exc, w_value, w_tb=None):
-        self.args = w_exc, w_value
-        self.w_tb = w_tb # this isn't much use yet.
+    def __init__(self, w_type, w_value, w_traceback=None):
+        self.w_type = w_type
+        self.w_value = w_value
+        self.w_traceback = w_traceback
     
     def __str__(self):
         "Convenience for tracebacks."
@@ -18,14 +19,14 @@ class OperationError(Exception):
     def nicetraceback(self, space):
         "Dump a nice custom traceback to sys.stderr."
         import sys, traceback
-        tb = sys.exc_info()[2]
+        traceback = sys.exc_info()[2]
         w_exc, w_value = self.args
         exc = space.unwrap(w_exc)
         value = space.unwrap(w_value)
         print >> sys.stderr, "*"*10, " OperationError ", "*"*10
-        traceback.print_tb(tb)
-##         if self.w_tb:
-##             traceback.print_tb(space.unwrap(self.w_tb))
+        traceback.print_tb(traceback)
+##         if self.w_traceback:
+##             traceback.print_tb(space.unwrap(self.w_traceback))
         msg = traceback.format_exception_only(exc, value)
         print >> sys.stderr, "[Application-level]", ''.join(msg).strip()
         print >> sys.stderr, "*"*10
@@ -73,6 +74,7 @@ class ObjSpace:
         try:
             helper = self.appfile_helpers[applicationfile]
         except KeyError:
+            from appfile import AppHelper
             helper = AppHelper(self, applicationfile.bytecode)
             self.appfile_helpers[applicationfile] = helper
         return helper
