@@ -21,10 +21,9 @@ _halfi = complex(0., 0.5)
 
 # internal function not available from Python
 def _prodi(x):
-    r = complex()
-    r.real = -x.imag
-    r.imag = x.real
-    return r
+    real = -x.imag
+    imag = x.real
+    return complex(real, imag)
 
 
 def acos(x):
@@ -89,10 +88,9 @@ def cos(x):
 
     Return the cosine of x."""
     
-    r = complex()
-    r.real = math.cos(x.real) * math.cosh(x.imag)
-    r.imag = -math.sin(x.real) * math.sinh(x.imag)
-    return r
+    real = math.cos(x.real) * math.cosh(x.imag)
+    imag = -math.sin(x.real) * math.sinh(x.imag)
+    return complex(real, imag)
 
 
 def cosh(x):
@@ -100,10 +98,9 @@ def cosh(x):
     
     Return the hyperbolic cosine of x."""
     
-    r = complex()
-    r.real = math.cos(x.imag) * math.cosh(x.real)
-    r.imag = math.sin(x.imag) * math.sinh(x.real)
-    return r
+    real = math.cos(x.imag) * math.cosh(x.real)
+    imag = math.sin(x.imag) * math.sinh(x.real)
+    return complex(real, imag)
 
 
 def exp(x):
@@ -111,11 +108,10 @@ def exp(x):
     
     Return the exponential value e**x."""
     
-    r = complex()
     l = math.exp(x.real)
-    r.real = l * math.cos(x.imag)
-    r.imag = l * math.sin(x.imag)
-    return r
+    real = l * math.cos(x.imag)
+    imag = l * math.sin(x.imag)
+    return complex(real, imag)
 
 
 def log(x):
@@ -123,11 +119,10 @@ def log(x):
 
     Return the natural logarithm of x."""
     
-    r = complex()
     l = math.hypot(x.real,x.imag)
-    r.imag = math.atan2(x.imag, x.real)
-    r.real = math.log(l)
-    return r
+    imag = math.atan2(x.imag, x.real)
+    real = math.log(l)
+    return complex(real, imag)
 
 
 def log10(x):
@@ -135,11 +130,10 @@ def log10(x):
 
     Return the base-10 logarithm of x."""
     
-    r = complex()
     l = math.hypot(x.real, x.imag)
-    r.imag = math.atan2(x.imag, x.real)/log(10.)
-    r.real = math.log10(l)
-    return r
+    imag = math.atan2(x.imag, x.real)/log(10.)
+    real = math.log10(l)
+    return complex(real, imag)
 
 
 def sin(x):
@@ -147,10 +141,9 @@ def sin(x):
 
     Return the sine of x."""
     
-    r = complex()
-    r.real = math.sin(x.real) * math.cosh(x.imag)
-    r.imag = math.cos(x.real) * math.sinh(x.imag)
-    return r
+    real = math.sin(x.real) * math.cosh(x.imag)
+    imag = math.cos(x.real) * math.sinh(x.imag)
+    return complex(real, imag)
 
 
 def sinh(x):
@@ -158,10 +151,9 @@ def sinh(x):
 
     Return the hyperbolic sine of x."""
     
-    r = complex()
-    r.real = math.cos(x.imag) * math.sinh(x.real)
-    r.imag = math.sin(x.imag) * math.cosh(x.real)
-    return r
+    real = math.cos(x.imag) * math.sinh(x.real)
+    imag = math.sin(x.imag) * math.cosh(x.real)
+    return complex(real, imag)
 
 
 def sqrt(x):
@@ -169,22 +161,21 @@ def sqrt(x):
 
     Return the square root of x."""
     
-    r = complex()
     if x.real == 0. and x.imag == 0.:
-        r = x
+        real, imag = 0, 0
     else:
         s = math.sqrt(0.5*(math.fabs(x.real) + math.hypot(x.real,x.imag)))
         d = 0.5*x.imag/s
         if x.real > 0.:
-            r.real = s
-            r.imag = d
+            real = s
+            imag = d
         elif x.imag >= 0.:
-            r.real = d
-            r.imag = s
+            real = d
+            imag = s
         else:
-            r.real = -d
-            r.imag = -s
-    return r
+            real = -d
+            imag = -s
+    return complex(real, imag)
 
 
 def tan(x):
@@ -192,7 +183,6 @@ def tan(x):
 
     Return the tangent of x."""
 
-    r = complex()
     sr = math.sin(x.real)
     cr = math.cos(x.real)
     shi = math.sinh(x.imag)
@@ -202,9 +192,9 @@ def tan(x):
     rc = cr * chi
     ic = -sr * shi
     d = rc*rc + ic * ic
-    r.real = (rs*rc + is_*ic) / d
-    r.imag = (is_*rc - rs*ic) / d
-    return r
+    real = (rs*rc + is_*ic) / d
+    imag = (is_*rc - rs*ic) / d
+    return complex(real, imag)
 
 
 def tanh(x):
@@ -212,7 +202,6 @@ def tanh(x):
 
     Return the hyperbolic tangent of x."""
     
-    r = complex()
     si = math.sin(x.imag)
     ci = math.cos(x.imag)
     shr = math.sinh(x.real)
@@ -222,6 +211,6 @@ def tanh(x):
     rc = ci * chr
     ic = si * shr
     d = rc*rc + ic*ic
-    r.real = (rs*rc + is_*ic) / d
-    r.imag = (is_*rc - rs*ic) / d
-    return r
+    real = (rs*rc + is_*ic) / d
+    imag = (is_*rc - rs*ic) / d
+    return complex(real, imag)

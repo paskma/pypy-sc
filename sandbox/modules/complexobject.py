@@ -24,13 +24,22 @@ class complex(object):
             raise TypeError, msg
 
         if type(real) in (types.StringType, types.UnicodeType):
-            self.real, self.imag = self._makeComplexFromString(real)
+            real, imag = self._makeComplexFromString(real)
+            self.__dict__['real'] = real
+            self.__dict__['imag'] = imag
         else:
             if imag is None:
                imag = 0.
-            self.real = float(real)
-            self.imag = float(imag)
+            self.__dict__['real'] = float(real)
+            self.__dict__['imag'] = float(imag)
         
+
+    def __setattr__(self, name, value):
+        if name in ('real', 'imag'):
+            raise TypeError, "readonly attribute"
+        else:
+            self.__dict__[name] = value
+
 
     def _makeComplexFromString(self, string):
         pat = re.compile(" *([\+\-]?\d*\.?\d*)([\+\-]?\d*\.?\d*)[jJ] *")
@@ -142,8 +151,7 @@ class complex(object):
         if errnum == errno.EDOM:
             raise ZeroDivisionError, "complex remainder"
 
-        div.real = math.floor(div.real) # Use the floor of the real part.
-        div.imag = 0.0
+        div = complex(math.floor(div.real), 0.0)
         mod = self - div*other
 
         if mod.__class__ == complex:
