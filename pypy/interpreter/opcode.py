@@ -134,7 +134,7 @@ def slice(f, w_start, w_end):
     w_slice = f.space.newslice(w_start, w_end, None)
     w_obj = f.valuestack.pop()
     w_result = f.space.getitem(w_obj, w_slice)
-    f.push(w_result)
+    f.valuestack.push(w_result)
 
 def SLICE_0(f):
     slice(f, None, None)
@@ -299,7 +299,7 @@ def BUILD_CLASS(f):
     w_name        = f.valuestack.pop()
     w_newclass = f.space.gethelper(appfile).call(
         "build_class", [w_methodsdict, w_bases, w_name])
-    f.push(w_newclass)
+    f.valuestack.push(w_newclass)
 
 def STORE_NAME(f, varindex):
     varname = f.getname(varindex)
