@@ -94,6 +94,25 @@ class StdObjectSpace:
     add = MultiMethod(2, '+')
     sub = MultiMethod(2, '-')
 
+    def __init__(self):
+
+        # add concrete apis:
+        
+        import concretespace
+        self.int = concretespace.IntObjSpace(self)
+        self.float = concretespace.FloatObjSpace(self)
+
+        # add type objects to space:
+
+        import intobject
+        self.W_IntObject = intobject.W_IntObject
+        import floatobject
+        self.W_FloatObject = floatobject.W_FloatObject
+
+        # install exceptions
+
+        self.w_TypeError = None
+
     """
 
     culled from trivialspace: a frighteningly long list of things that
@@ -157,5 +176,5 @@ class StdObjectSpace:
     exc_match
     richcompare
 
-
     """
+
