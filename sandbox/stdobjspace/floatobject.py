@@ -1,8 +1,19 @@
 from objspace import *
 
+##############################################################
+# for the time being, all calls that are made to some external
+# libraries in the floatobject.c, calls are made into the 
+# python math library
+##############################################################
+
+import math
+
 applicationfile = StdObjSpace.AppFile(__name__)
 
 class W_FloatObject:
+    """This is a reimplementation of the CPython "PyFloatObject" 
+       it is assumed that the constructor takes a real Python float as
+       an argument""" 
     
     def __init__(w_self, floatval):
         w_self.floatval = floatval
@@ -100,7 +111,7 @@ def float_float_mod(space, w_float1, w_float2):
         raise FailedToImplement(space.w_ZeroDivisionError, space.wrap("float modulo"))
     try:
         # this is a hack!!!! must be replaced by a real fmod function
-        mod = applicationfile.call(space, "float_fmod", [x,y])
+        mod = math.fmod(x,y)
         if (mod and ((y < 0.0) != (mod < 0.0))):
             mod += y
     except FloatingPointError:
@@ -117,7 +128,7 @@ def float_float_divmod(space, w_float1, w_float2):
         raise FailedToImplement(space.w_ZeroDivisionError, space.wrap("float modulo"))
     try:
         # this is a hack!!!! must be replaced by a real fmod function
-        mod = applicationfile.call(space, "float_fmod", [x,y])
+        mod = math.fmod(x,y)
         div = (x -mod) / y
         if (mod):
             if ((y < 0.0) != (mod < 0.0)):
@@ -128,7 +139,7 @@ def float_float_divmod(space, w_float1, w_float2):
             if y < 0.0:
                 mod = -mod
         if div:
-            floordiv = applicationfile.call(space, "float_floor", [div])
+            floordiv = math.floor(div)
             if (div - floordiv > 0.5):
                 floordiv += 1.0
         else:
@@ -168,7 +179,7 @@ def float_pos(space, w_float):
 StdObjSpace.pos.register(float_pos, W_FloatObject)
 
 def float_abs(space, w_float):
-    return W_FloatObject(applicationfile.call(space, "float_fabs", [w_float.floatval]))
+    return W_FloatObject(fabs(w_float.floatval))
 
 StdObjSpace.abs.register(float_abs, W_FloatObject)
 
@@ -177,6 +188,8 @@ def float_nonzero(space, w_float):
 
 StdObjSpace.nonzero.register(float_nonzero, W_FloatObject)
 
+######## coersion must be done later
+later = """
 def float_coerce(space, w_float):
     if w_float.__class__ == W_FloatObject:
         return w_float
@@ -184,3 +197,4 @@ def float_coerce(space, w_float):
         return W_FloatObject(w_float.floatval)
 
 StdObjSpace.coerce.register(float_coerce, W_FloatObject)
+"""

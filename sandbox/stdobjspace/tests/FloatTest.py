@@ -36,19 +36,19 @@ class floatTest(unittest.TestCase):
         x = 1.0
         f1 = fl.W_FloatObject(x)
         result = fl.float_repr(self.space,f1)
-        assert result == repr(x)
+        assert self.space.unwrap(result) == repr(x)
 
     def strTest(self):
         x = 1.0
         f1 = fl.W_FloatObject(x)
         result = fl.float_str(self.space,f1)
-        assert result == str(x)
+        assert self.space.unwrap(result) == str(x)
 
     def hashTest(self):
         x = 1.0
         f1 = fl.W_FloatObject(x)
         result = fl.float_hash(self.space,f1)
-        assert result == hash(x)
+        assert self.space.unwrap(result) == hash(x)
 
     def addTest(self):
         f1 = fl.W_FloatObject(1.0)

@@ -15,6 +15,13 @@ class CallWrapper:
         return getattr(self._module,methodname)(*attributes)
 class W_NoneObject:pass
 
+class WrapClass:
+    def __init__(self,value):
+        self.value = value
+
+    def value(self):
+        return value
+
 class ObjSpace:
     add = FakeRegister()
     sub = FakeRegister()
@@ -54,10 +61,10 @@ class ObjSpace:
     w_ZeroDivisionError = "w_ZeroDivisionError"
 
     def wrap(self,item):
-        return item
+        return WrapClass(item)
 
     def unwrap(self,item):
-        return item
+        return item.value
 
     def AppFile(self,name):
         thismod = new.module(name+'_app')
