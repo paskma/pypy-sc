@@ -237,6 +237,22 @@ class complex(object):
         return complex(self.real, -self.imag)
 
 
+    def __lt__(self, other):
+        raise TypeError, "cannot compare complex numbers using <, <=, >, >="
+
+        
+    def __le__(self, other):
+        raise TypeError, "cannot compare complex numbers using <, <=, >, >="
+
+        
+    def __gt__(self, other):
+        raise TypeError, "cannot compare complex numbers using <, <=, >, >="
+
+        
+    def __get__(self, other):
+        raise TypeError, "cannot compare complex numbers using <, <=, >, >="
+
+
 
         
 # complex_subtype_from_c_complex
