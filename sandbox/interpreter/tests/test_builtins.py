@@ -6,8 +6,7 @@ import trivialspace
 
 class TestInterpreter(unittest.TestCase):
 
-    def test_trivial1(self):
-
+    def test_exceptions(self):
         # build frame
         space = trivialspace
         bytecode = compile('def f(x): return x+1', '', 'exec').co_consts[0]

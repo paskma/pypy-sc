@@ -1,4 +1,4 @@
-import sys
+import sys,os
 import pyframe
 
 
@@ -22,7 +22,10 @@ class AppFile:
         "Load and compile the file."
         # XXX looking for a pre-compiled file here will be quite essential
         #     when we want to bootstrap the compiler
-        f = open(filename, 'r')
+        
+        # XXX path handling is just done in a dummy way for now
+        fullfn = os.path.join(os.path.dirname(__file__), filename)
+        f = open(fullfn, 'r')
         src = f.read()
         f.close()
         self.bytecode = compile(src, filename, 'exec')

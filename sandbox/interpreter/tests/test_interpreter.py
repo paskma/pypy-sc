@@ -1,4 +1,5 @@
-import unittest
+import unittest, sys, os
+sys.path.insert(0, '..')
 
 from pyframe import PyFrame
 import trivialspace
