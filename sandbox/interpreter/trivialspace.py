@@ -4,7 +4,8 @@
 # correctly wrap the exceptions.
 #
 
-import pypy, operator, types, new
+import pypy, pyframe
+import operator, types, new, sys
 
 # The module itself is the object space; no TrivialSpace class here.
 
@@ -26,17 +27,31 @@ newslice  = slice  # maybe moved away to application-space at some time
 getiter   = iter
 repr      = repr
 pow       = pow
-getattr   = getattr
 setattr   = setattr
 delattr   = delattr
 is_true   = operator.truth
 # 'is_true' is not called 'truth' because it returns a *non-wrapped* boolean
 
-# operators (!! no exception wrapping !!)
-from operator import pos, neg, not_, invert
-from operator import mul, truediv, floordiv, div, mod
-from operator import add, sub, lshift, rshift, and_, xor, or_
-from operator import getitem, setitem, delitem
+def getattr(w_obj, w_name):
+    try:
+        obj = unwrap(w_obj)
+        name = unwrap(w_name)
+        return __builtins__.getattr(obj, name)
+    except:
+        raise pypy.OperationError(*sys.exc_info()[:2])
+    
+for _name in ('pos', 'neg', 'not_', 'pos', 'neg', 'not_', 'invert',
+             'mul', 'truediv', 'floordiv', 'div', 'mod',
+             'add', 'sub', 'lshift', 'rshift', 'and_', 'xor', 'or_',
+             'getitem', 'setitem', 'delitem'):
+    exec """
+def %(_name)s(*args):
+    try:
+        return operator.%(_name)s(*args)
+    except:
+        cls, value, tb = sys.exc_info()
+        raise pypy.OperationError(cls, value)
+""" % locals()
 
 # in-place operators
 def inplace_pow(w1, w2):
@@ -97,13 +112,12 @@ def apply(callable, args, kwds):
         bytecode = callable.func_code
         w_globals = space.wrap(callable.func_globals)
         w_locals = space.newdict([])
-        frame = PyFrame(space, bytecode, w_globals, w_locals)
+        frame = pyframe.PyFrame(space, bytecode, w_globals, w_locals)
         # perform call
         frame.setargs(args, kwds)
         return frame.eval()
     else:
-        return apply(callable, args, kwds)
-
+        return __builtins__.apply(callable, args, kwds)
 
 # comparisons
 def in_(w1, w2):

@@ -547,7 +547,7 @@ def call_function_extra(f, oparg, with_varargs, with_varkw):
     if with_varargs:
         w_arguments = applicationfile.call(f.space, "concatenate_arguments",
                                            [w_arguments, w_varargs])
-    if with_kwargs:
+    if with_varkw:
         w_keywords  = applicationfile.call(f.space, "concatenate_keywords",
                                            [w_keywords,  w_varkw])
     w_result = f.space.apply(w_function, w_arguments, w_keywords)

@@ -1,16 +1,16 @@
-import unittest
+import unittest, sys, os
+sys.path.insert(0, '..')
 
 from pyframe import PyFrame
 import trivialspace
 
-# note that we are running the tests at the interpreter level!
 
-class TestInterpreter(unittest.TestCase):
+class TestBuiltins(unittest.TestCase):
 
-    def test_exceptions(self):
+    def test_filter_None(self):
         # build frame
         space = trivialspace
-        bytecode = compile('def f(x): return x+1', '', 'exec').co_consts[0]
+        bytecode = compile("def f(x): return filter(None, [1, '', 2])", '', 'exec').co_consts[0]
         w_globals = space.wrap({'__builtins__': __builtins__})
         w_locals = space.wrap({})
         frame = PyFrame(space, bytecode, w_globals, w_locals)
@@ -19,8 +19,7 @@ class TestInterpreter(unittest.TestCase):
         w_input = frame.space.wrap((5,))
         frame.setargs(w_input)
         w_output = frame.eval()
-        self.assertEquals(frame.space.unwrap(w_output), 6)
-
+        self.assertEquals(frame.space.unwrap(w_output), [1,2])
         
 
 if __name__ == '__main__':

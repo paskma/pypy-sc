@@ -85,12 +85,13 @@ class PyFrame:
 
     ### frame initialization ###
 
-    def setargs(self, w_arguments):
+    def setargs(self, w_arguments, w_kwargs=None):
         # initialize the frame with the given arguments tuple.
         # The simple case cannot be done at the application-level (.app.py)
         # for bootstrapping reasons.
         # XXX incomplete!  All the not-so-simple cases are missing.
         #     See PyEval_EvalCodeEx().
+        # XXX handle w_kwargs
         arguments = unpackiterable(self.space, w_arguments)
         if len(arguments) != self.bytecode.co_argcount:
             message = "(this is an error message that needs to be fixed)"
