@@ -125,21 +125,26 @@ class PyFrame:
 ### Frame Blocks ###
 
 class FrameBlock:
+
     """Abstract base class for frame blocks from the blockstack."""
     def cleanup(self, frame):
         "Clean up a frame when we normally exit the block."
+
     def unroll(self, frame, unroller):
         "Clean up a frame when we abnormally exit the block."
 
 class SyntacticBlock(FrameBlock):
     """Abstract subclass for blocks which are syntactic Python blocks
     corresponding to the SETUP_XXX / POP_BLOCK opcodes."""
+
     def __init__(self, frame, handlerposition):
         self.handlerposition = handlerposition
         self.valuestackdepth = frame.valuestack.depth()
+
     def cleanup(self, frame):
         for i in range(self.valuestackdepth, frame.valuestack.depth()):
             frame.valuestack.pop()
+
     def unroll(self, frame, unroller):
         self.cleanup(frame)   # same behavior except in FinallyBlock
 
@@ -151,11 +156,13 @@ class ExceptBlock(SyntacticBlock):
 
 class FinallyBlock(SyntacticBlock):
     """A try:finally: block.  Stores the position of the exception handler."""
+
     def cleanup(self, frame):
         # upon normal entry into the finally: part, we push on the block stack
         # a block that says that we entered the finally: with no exception set
         SyntacticBlock.cleanup(self, frame)
         frame.blockstack.push(NoExceptionInFinally())
+
     def unroll(self, frame, unroller):
         # any abnormal reason for unrolling a finally: triggers the end of
         # the block unrolling and the entering the finally: handler.
@@ -169,8 +176,10 @@ class NoExceptionInFinally(FrameBlock):
 
 class ExceptionInFinally(FrameBlock):
     """When we enter a finally: construct with a Python exception set."""
+
     def __init__(self, original_unroller):
         self.original_unroller = original_unroller
+
     def cleanup(self, frame):
         # re-activate the block stack unroller when we normally reach the
         # end of the finally: handler
@@ -205,6 +214,7 @@ class StackUnroller(Exception):
             self.emptystack(frame)
         except StopUnrolling:
             pass
+
     def emptystack(self, frame):
         "Default behavior when the block stack is exhausted."
         # could occur e.g. when a BREAK_LOOP is not actually within a loop
@@ -213,6 +223,7 @@ class StackUnroller(Exception):
 class SApplicationException(StackUnroller):
     """Unroll the stack because of an application-level exception
     (i.e. an OperationException)."""
+
     def unrolledblock(self, frame, block):
         if isinstance(block, ExceptBlock):
             # push the exception to the value stack for inspection by the
@@ -226,6 +237,7 @@ class SApplicationException(StackUnroller):
             frame.next_instr = block.handlerposition   # jump to the handler
             frame.blockstack.push(NoExceptionInFinally())
             raise StopUnrolling
+
     def emptystack(self, frame):
         # propagate the exception to the caller
         w_exc_class, w_exc_value = self.args
@@ -235,6 +247,7 @@ class SApplicationException(StackUnroller):
 
 class SBreakLoop(StackUnroller):
     """Signals a 'break' statement."""
+
     def unrolledblock(self, frame, block):
         if isinstance(block, LoopBlock):
             # jump to the end of the loop
@@ -244,6 +257,7 @@ class SBreakLoop(StackUnroller):
 class SContinueLoop(StackUnroller):
     """Signals a 'continue' statement.
     Argument is the bytecode position of the beginning of the loop."""
+
     def unrolledblock(self, frame, block):
         if isinstance(block, LoopBlock):
             # re-push the loop block and jump to the beginning of the
@@ -256,8 +270,10 @@ class SContinueLoop(StackUnroller):
 class SReturnValue(StackUnroller):
     """Signals a 'return' statement.
     Argument is the wrapped object to return."""
+
     def unrolledblock(self, frame, block):
         pass
+
     def emptystack(self, frame):
         # XXX do something about generators, like throw a NoValue
         w_returnvalue, = self.args
@@ -266,6 +282,7 @@ class SReturnValue(StackUnroller):
 class SYieldValue(StackUnroller):
     """Signals a 'yield' statement.
     Argument is the wrapped object to return."""
+
     def unrollstack(self, frame):
         w_yieldedvalue, = self.args
         raise ExitFrame(w_yieldedvalue)
@@ -310,7 +327,7 @@ def unpackiterable(space, w_iterable):
     """Utility function unpacking any finite-length iterable object into a
     real (interpreter-level) list."""
     w_iterator = space.getiter(w_iterable)
-    items = []
+    vitems = []
     while True:
         try:
             w_item = space.iternext(w_iterator)
