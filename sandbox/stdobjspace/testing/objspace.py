@@ -50,6 +50,12 @@ class ObjSpace:
         ret = CallWrapper(thislocals)
         return ret
 
+    def newtuple(self,tuplelist):
+        return tuple(tuplelist)
+
+    def newdouble(self,thisdouble):
+        return thisdouble
+
 StdObjSpace = ObjSpace()
 
 if __name__ == '__main__':
