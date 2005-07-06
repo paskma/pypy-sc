@@ -49,6 +49,9 @@ class Module(MixedModule):
         'intern'        : 'app_misc.intern',
         'buffer'        : 'app_buffer.buffer',
         'reload'        : 'app_misc.reload',
+
+        'set'           : 'app_sets.set',
+        'frozenset'     : 'app_sets.frozenset',
     }
 
     interpleveldefs = {

@@ -6,6 +6,7 @@ helper functions are provided that use the grammar to parse
 using file_input, single_input and eval_input targets
 """
 from pypy.interpreter.error import OperationError, debug_print
+from pypy.interpreter.pyparser.error import ParseError
 from pypy.tool.option import Options
 
 from pythonlexer import Source
@@ -14,6 +15,7 @@ import sys
 import os
 import grammar
 import symbol
+from codeop import PyCF_DONT_IMPLY_DEDENT
 
 class PythonParser(object):
     """Wrapper class for python grammar"""
@@ -23,19 +25,20 @@ class PythonParser(object):
         # Build first sets for each rule (including anonymous ones)
         grammar.build_first_sets(self.items)
 
-    def parse_source(self, textsrc, goal, builder=None):
+    def parse_source(self, textsrc, goal, builder=None, flags=0):
         """Parse a python source according to goal"""
         lines = [line + '\n' for line in textsrc.split('\n')]
-        if textsrc == '\n':
+        if textsrc.endswith('\n'):
             lines.pop()
+            flags &= ~PyCF_DONT_IMPLY_DEDENT
         else:
             last_line = lines[-1]
             lines[-1] = last_line[:-1]
-        return self.parse_lines(lines, goal, builder)
+        return self.parse_lines(lines, goal, builder, flags)
 
-    def parse_lines(self, lines, goal, builder=None):
+    def parse_lines(self, lines, goal, builder=None, flags=0):
         target = self.rules[goal]
-        src = Source(lines)
+        src = Source(lines, flags)
         
         if builder is None:
             builder = grammar.BaseGrammarBuilder(debug=False, rules=self.rules)
@@ -44,10 +47,9 @@ class PythonParser(object):
         builder.source_encoding = src.encoding
         # </HACK>
         if not result:
-            # raising a SyntaxError here is not annotable, and it can
-            # probably be handled in an other way
             line, lineno = src.debug()
-            raise BuilderError(line, lineno)
+            # XXX needs better error messages
+            raise ParseError("error", lineno, -1, line)
             # return None
         return builder
 
@@ -107,14 +109,6 @@ for k, v in symbol.sym_name.items():
 SYMBOLS['UNKNOWN'] = -1
 
 
-
-class BuilderError(SyntaxError):
-    def __init__(self, line, lineno):
-        self.filename = 'XXX.py'
-        self.line = self.text = line
-        self.lineno = lineno
-        self.offset = -1
-        self.msg = "SyntaxError at line %d: %r" % (self.lineno, self.line)
 
 def parse_file_input(pyf, gram, builder=None):
     """Parse a python file"""

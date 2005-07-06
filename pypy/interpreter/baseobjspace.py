@@ -164,10 +164,6 @@ class ObjSpace(object):
     def leave_cache_building_mode(self, val):
         "hook for the flow object space"
 
-    def get_ec_state_dict(self):
-        "Return the 'state dict' from the active execution context."
-        return self.getexecutioncontext().get_state_dict()
-    
     def getexecutioncontext(self):
         "Return what we consider to be the active execution context."
         ec = self.threadlocals.executioncontext
@@ -189,17 +185,14 @@ class ObjSpace(object):
 
     def createcompiler(self):
         "Factory function creating a compiler object."
-        if self.options.parser == 'recparser':
-            if self.options.compiler == 'cpython':
-                return PythonCompiler(self)
-            else:
-                return PyPyCompiler(self)
-        elif self.options.compiler == 'pyparse':
-            # <=> options.parser == 'cpython'
+        # XXX simple selection logic for now
+        if self.options.compiler == 'pyparse':
             return PythonCompiler(self)
-        else:
-            # <=> options.compiler == 'cpython' and options.parser == 'cpython'
+        elif self.options.compiler == 'cpython':
             return CPythonCompiler(self)
+        else:
+            raise ValueError('unknown --compiler option value: %r' % (
+                self.options.compiler,))
 
     # Following is a friendly interface to common object space operations
     # that can be defined in term of more primitive ones.  Subclasses
