@@ -2,9 +2,11 @@
 it obeys the TokenSource interface defined for the grammar
 analyser in grammar.py
 """
-import symbol
+import symbol, sys
+from codeop import PyCF_DONT_IMPLY_DEDENT
 
 from pypy.interpreter.pyparser.grammar import TokenSource, Token
+from pypy.interpreter.pyparser.error import ParseError
 # Don't import string for that ...
 NAMECHARS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_'
 NUMCHARS = '0123456789'
@@ -71,18 +73,14 @@ import automata
 tokenmod.COMMENT = tokenmod.N_TOKENS 
 tokenmod.NL = tokenmod.N_TOKENS + 1
 
-class TokenError(SyntaxError):
-    """Raised when EOF is found prematuerly"""
+class TokenError(ParseError):
+    """Raised for lexer errors, e.g. when EOF is found prematurely"""
     def __init__(self, msg, line, strstart, token_stack):
-        self.lineno, self.offset = strstart
-        self.text = line
-        self.errlabel = msg
-        self.msg = "TokenError at pos (%d, %d) in %r" % (self.lineno,
-                                                         self.offset,
-                                                         line)
+        lineno, offset = strstart
+        ParseError.__init__(self, msg, lineno, offset, line)
         self.token_stack = token_stack
 
-def generate_tokens(lines):
+def generate_tokens(lines, flags):
     """
     This is a rewrite of pypy.module.parser.pytokenize.generate_tokens since
     the original function is not RPYTHON (uses yield)
@@ -112,7 +110,6 @@ def generate_tokens(lines):
     indents = [0]
     last_comment = ''
     encoding = None
-    strstart = (0, 0)
     # make the annotator happy
     pos = -1
     lines.append('') # XXX HACK probably not needed
@@ -126,8 +123,8 @@ def generate_tokens(lines):
 
         if contstr:                            # continued string
             if not line:
-                raise TokenError("EOF in multi-line string", line, strstart,
-                                 token_list)
+                raise TokenError("EOF in multi-line string", line,
+                                 (lnum, 0), token_list)
             endmatch = endDFA.recognize(line)
             if -1 != endmatch:
                 pos = end = endmatch
@@ -203,9 +200,13 @@ def generate_tokens(lines):
                     start = pos
                 end = pseudomatch
 
+                if start == end:
+                    # Nothing matched!!!
+                    raise TokenError("Unknown character", line,
+                                 (lnum, start), token_list)
+
                 spos, epos, pos = (lnum, start), (lnum, end), end
                 token, initial = line[start:end], line[start]
-
                 if initial in numchars or \
                    (initial == '.' and token != '.'):      # ordinary number
                     tok = token_from_values(tokenmod.NUMBER, token)
@@ -241,7 +242,6 @@ def generate_tokens(lines):
                         token_list.append((tok, line, lnum, pos))
                         last_comment = ''
                     else:
-                        strstart = (lnum, start)           # multiple lines
                         contstr = line[start:]
                         contline = line
                         break
@@ -249,7 +249,6 @@ def generate_tokens(lines):
                     token[:2] in single_quoted or \
                     token[:3] in single_quoted:
                     if token[-1] == '\n':                  # continued string
-                        strstart = (lnum, start)
                         endDFA = (endDFAs[initial] or endDFAs[token[1]] or
                                    endDFAs[token[2]])
                         contstr, needcont = line[start:], 1
@@ -281,24 +280,24 @@ def generate_tokens(lines):
                 pos = pos + 1
 
     lnum -= 1
-    for indent in indents[1:]:                 # pop remaining indent levels
-        tok = token_from_values(tokenmod.DEDENT, '')
-        token_list.append((tok, line, lnum, pos))
-        
-    ## <XXX> adim: this can't be (only) that, can it ?
-    if token_list and token_list[-1] != symbol.file_input:
+    if not (flags & PyCF_DONT_IMPLY_DEDENT):
+        if token_list and token_list[-1][0].name != 'NEWLINE':
+            token_list.append((Token('NEWLINE', ''), '\n', lnum, 0))
+        for indent in indents[1:]:                 # pop remaining indent levels
+            tok = token_from_values(tokenmod.DEDENT, '')
+            token_list.append((tok, line, lnum, pos))
+    if token_list and token_list[-1][0].name != 'NEWLINE':
         token_list.append((Token('NEWLINE', ''), '\n', lnum, 0))
-    ## </XXX>
+
     tok = token_from_values(tokenmod.ENDMARKER, '',)
     token_list.append((tok, line, lnum, pos))
-
     return token_list, encoding
 
 class PythonSource(TokenSource):
     """This source uses Jonathan's tokenizer"""
-    def __init__(self, strings):
+    def __init__(self, strings, flags=0):
         # TokenSource.__init__(self)
-        tokens, encoding = generate_tokens(strings)
+        tokens, encoding = generate_tokens(strings, flags)
         self.token_stack = tokens
         self.encoding = encoding
         self._current_line = '' # the current line (as a string)
@@ -309,11 +308,11 @@ class PythonSource(TokenSource):
     def next(self):
         """Returns the next parsed token"""
         if self.stack_pos >= len(self.token_stack):
-            raise StopIteration("Remove me")
+            raise StopIteration
         tok, line, lnum, pos = self.token_stack[self.stack_pos]
         self.stack_pos += 1
         self._current_line = line
-        self._lineno = lnum
+        self._lineno = max(self._lineno, lnum)
         self._offset = pos
         return tok
 

@@ -12,7 +12,7 @@ from pypy.objspace.flow.model import Constant, Variable
 from pypy.rpython.rtyper import RPythonTyper
 from pypy.rpython.rarithmetic import r_uint
 
-#py.log.setconsumer("genllvm", py.log.STDOUT)
+py.log.setconsumer("genllvm", py.log.STDOUT)
 py.log.setconsumer("genllvm database prepare", None)
 
 
@@ -36,6 +36,13 @@ def compile_module_function(function, annotate, view=False):
     mod = compile_module(function, annotate, view)
     f = getattr(mod, function.func_name + "_wrapper")
     return mod, f
+
+def test_external_function():
+    import os
+    def fn():
+        return os.dup(0)
+    f = compile_function(fn, [], view=False)
+    assert os.path.sameopenfile(f(), fn())
 
 def test_GC_malloc(): 
     if not use_boehm_gc:
@@ -107,7 +114,7 @@ def test_int_ops():
     f = compile_function(ops, [int])
     assert f(1) == 1
     assert f(2) == 2
-
+    
 def test_while_loop():
     def factorial(i):
         r = 1
@@ -324,7 +331,7 @@ def Xtest_string_getitem1():
     l = "Hello, World"
     def string_getitem1(i): 
         return l[i]
-    f = compile_function(string_getitem1, [int], view=True)
+    f = compile_function(string_getitem1, [int], view=False)
     assert f(0) == ord("H")
 
 def DONOT_test_string_getitem2():
