@@ -10,7 +10,7 @@ Command-line options for translate_pypy:
               targetspec.py is a python file defining
               what is the translation target and setting things up for it,
               it should have a target function returning an entry_point ...;
-              defaults to targetpypymain. The .py suffix is optional.
+              defaults to targetpypystandalone. The .py suffix is optional.
    -text      Don't start the Pygame viewer
    -no-a      Don't infer annotations, just translate everything
    -no-t      Don't type-specialize the graph operations with the C typer
@@ -28,8 +28,8 @@ Command-line options for translate_pypy:
    -d         Enable recording of annotator debugging information
    -huge=%    Threshold in the number of functions after which only a local call
               graph and not a full one is displayed
-   -no-snapshot
-              Don't redirect imports to the translation snapshot
+   -use-snapshot
+              Redirect imports to the translation snapshot
    -save filename
               saves the translator to a file. The file type can either
               be .py or .zip (recommended).
@@ -38,16 +38,16 @@ Command-line options for translate_pypy:
               be either .py or .zip .
    -llinterpret
               interprets the flow graph after rtyping it
-   -laptop    try to save as much memory as possible, since laptops tend to
-              have less than a gigabyte of memory (512 MB is typical).
+   -t-lowmem  try to save as much memory as possible, since many computers
+              tend to have less than a gigabyte of memory (512 MB is typical).
               Currently, we avoid to use geninterplevel, which creates a lot
-              of extra blocks, but gains only som 10-20 % of speed, because
+              of extra blocks, but gains only some 10-20 % of speed, because
               we are still lacking annotation of applevel code.
-   -batch     don't use interactive helpers,like pdb
+   -batch     don't use interactive helpers, like pdb
 """
 import autopath, sys, os
 
-if '-no-snapshot' not in sys.argv:
+if '-use-snapshot' in sys.argv:
     # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     basedir = autopath.this_dir
 
@@ -55,7 +55,7 @@ if '-no-snapshot' not in sys.argv:
 
     if not os.path.isdir(pypy_translation_snapshot_dir):
         print """
-    Translation is performed on a specific revision of PyPy which lives on
+    Translation will be performed on a specific revision of PyPy which lives on
     a branch. This needs to be checked out into translator/goal with:
 
     svn co http://codespeak.net/svn/pypy/branch/pypy-translation-snapshot
@@ -107,7 +107,7 @@ def analyse(target):
 
     policy = AnnotatorPolicy()
     if target:
-        spec = target(not options['-laptop'])
+        spec = target(not options['-t-lowmem'])
         try:
             entry_point, inputtypes, policy = spec
         except ValueError:
@@ -334,7 +334,7 @@ def run_server():
 
 if __name__ == '__main__':
 
-    targetspec = 'targetpypymain'
+    targetspec = 'targetpypystandalone'
     huge = 100
     load_file = None
     save_file = None
@@ -352,13 +352,13 @@ if __name__ == '__main__':
                '-no-o': False,
                '-tcc':  False,
                '-d': False,
-               '-no-snapshot' : False,
+               '-use-snapshot' : False,
                '-load': False,
                '-save': False,
                '-fork': False,
                '-fork2': False,
                '-llinterpret': False,
-               '-laptop': False,
+               '-t-lowmem': False,
                '-batch': False,
                }
     listen_port = None
@@ -654,10 +654,14 @@ show class hierarchy graph"""
         else:
             if options['-llvm']:
                 print 'Generating and compiling LLVM code...'
-                c_entry_point = t.llvmcompile(standalone=standalone)
+                c_entry_point = t.llvmcompile(standalone=standalone, exe_name='pypy-llvm')
             else:
                 print 'Generating and compiling C code...'
                 c_entry_point = t.ccompile(standalone=standalone, gcpolicy=gcpolicy)
+                if standalone: # xxx fragile and messy
+                    import shutil
+                    shutil.move(c_entry_point, 'pypy-c')
+                    c_entry_point = './pypy-c'
             update_usession_dir()
             if not options['-o']:
                 print 'Running!'

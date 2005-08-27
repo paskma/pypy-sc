@@ -10,7 +10,7 @@ from _stablecompiler.pycodegen import ExpressionCodeGenerator
 from _stablecompiler.transformer import Transformer
 
 def applevelcompile(tuples, filename, mode, flag_names ):
-    transformer = Transformer()
+    transformer = Transformer(filename)
     tree = transformer.compile_node(tuples)
     set_filename(filename, tree)
     if mode == 'exec':
@@ -29,7 +29,8 @@ DUMPFILE = 'this_is_the_marshal_file'
 def fakeapplevelcompile(tuples_or_src, filename, mode, flag_names):
     import os, marshal
     done = False
-    data = marshal.dumps( (tuples_or_src, filename, mode, done, flag_names))
+    #data = marshal.dumps( (tuples_or_src, filename, mode, done, flag_names))
+    data = repr( (tuples_or_src, filename, mode, done, flag_names))
     f = file(DUMPFILE, "wb")
     f.write(data)
     f.close()

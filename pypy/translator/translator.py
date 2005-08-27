@@ -199,11 +199,15 @@ class Translator:
         
         Returns LLVM translation.
         """
-        from pypy.translator.llvm2 import genllvm
+        from pypy.translator.llvm.genllvm import GenLLVM
         if self.annotator is None:
             raise ValueError, "function has to be annotated."
-        gen = genllvm.GenLLVM(self)
-        return str(gen.compile())
+        gen = GenLLVM(self)
+        filename = gen.gen_llvm_source()
+        f = open(filename, "r")
+        result = f.read()
+        f.close()
+        return result
     
     def generatecode(self, gencls, input_arg_types, func):
         if input_arg_types is None:
@@ -275,16 +279,17 @@ class Translator:
         else:
             return genc.CExtModuleBuilder(self, gcpolicy=gcpolicy)
 
-    def llvmcompile(self, really_compile=True, standalone=False, optimize=True):
+    def llvmcompile(self, really_compile=True, standalone=False, optimize=True, exe_name=None):
         """llvmcompile(self, really_compile=True, standalone=False, optimize=True) -> LLVM translation
         
         Returns LLVM translation with or without optimization.
         """
-        from pypy.translator.llvm2 import genllvm
+        from pypy.translator.llvm import genllvm
         if self.annotator is None:
             raise ValueError, "function has to be annotated."
         if standalone:
-            exe_name = self.entrypoint.__name__
+            if not exe_name:
+                exe_name = self.entrypoint.__name__
         else:
             exe_name = None
         self.frozen = True
