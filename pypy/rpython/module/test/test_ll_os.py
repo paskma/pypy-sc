@@ -19,7 +19,6 @@ def test_open_read_write_close():
 
     os.unlink(filename)
 
-
 def test_getcwd():
     data = ll_os_getcwd()
     assert from_rstr(data) == os.getcwd()
@@ -35,3 +34,47 @@ def test_system():
     assert data == 0
     assert file(filename).read().strip() == '2'
     os.unlink(filename)
+
+def test_putenv_unsetenv():
+    filename = str(udir.join('test_putenv.txt'))
+    arg = to_rstr('abcdefgh=12345678')
+    ll_os_putenv(arg)
+    cmd = '''python -c "import os; print os.environ['abcdefgh']" > %s''' % filename
+    os.system(cmd)
+    f = file(filename)
+    result = f.read().strip()
+    assert result == '12345678'
+    f.close()
+    os.unlink(filename)
+    ll_os_unsetenv(to_rstr("abcdefgh"))
+    cmd = '''python -c "import os; print repr(os.getenv('abcdefgh'))" > %s''' % filename
+    os.system(cmd)
+    f = file(filename)
+    result = f.read().strip()
+    assert result == 'None'
+    f.close()
+    os.unlink(filename)
+
+test_src = """
+import os
+from pypy.tool.udir import udir
+from pypy.rpython.module.ll_os import *
+
+def test_environ():
+    count = 0
+    while 1:
+        if not ll_os_environ(count):
+            break
+        count += 1
+    channel.send(count == len(os.environ.keys()))
+test_environ()
+"""
+
+def test_environ():
+    import py
+    gw = py.execnet.PopenGateway()
+    chan = gw.remote_exec(py.code.Source(test_src))
+    res = chan.receive()
+    assert res
+    chan.close()
+

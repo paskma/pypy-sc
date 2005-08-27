@@ -2,6 +2,7 @@
 from pypy.interpreter.mixedmodule import MixedModule
 
 import os
+exec 'import %s as posix' % os.name
 
 class Module(MixedModule):
     """This module provides access to operating system functionality that is
@@ -9,9 +10,12 @@ standardized by the C Standard and the POSIX standard (a thinly
 disguised Unix interface).  Refer to the library manual and
 corresponding Unix manual entries for more information on calls."""
 
+    applevel_name = os.name
+
     appleveldefs = {
     'error'      : 'app_posix.error',
     'stat_result': 'app_posix.stat_result',
+    'fdopen'     : 'app_posix.fdopen',
     }
     
     interpleveldefs = {
@@ -31,9 +35,14 @@ corresponding Unix manual entries for more information on calls."""
     'chdir'     : 'interp_posix.chdir',
     'mkdir'     : 'interp_posix.mkdir',
     'rmdir'     : 'interp_posix.rmdir',
+    'environ'   : 'interp_posix.get(space).w_environ'
     }
     if hasattr(os, 'ftruncate'):
         interpleveldefs['ftruncate'] = 'interp_posix.ftruncate'
+    if hasattr(os, 'putenv'):
+        interpleveldefs['putenv'] = 'interp_posix.putenv'
+    if hasattr(posix, 'unsetenv'): # note: emulated in os
+        interpleveldefs['unsetenv'] = 'interp_posix.unsetenv'
 
 
 for constant in dir(os):

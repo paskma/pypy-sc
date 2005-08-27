@@ -27,6 +27,9 @@ EXTERNALS = {
     ll_os  .ll_os_chdir:   'LL_os_chdir',
     ll_os  .ll_os_mkdir:   'LL_os_mkdir',
     ll_os  .ll_os_rmdir:   'LL_os_rmdir',
+    ll_os  .ll_os_putenv:  'LL_os_putenv',
+    ll_os  .ll_os_unsetenv:'LL_os_unsetenv',
+    ll_os  .ll_os_environ: 'LL_os_environ',
     ll_time.ll_time_clock: 'LL_time_clock',
     ll_time.ll_time_sleep: 'LL_time_sleep',
     ll_time.ll_time_time:  'LL_time_time',
@@ -75,12 +78,19 @@ def predeclare_utility_functions(db, rtyper):
     def RPyString_New(length=lltype.Signed):
         return lltype.malloc(STR, length)
 
+    # !!!
+    # be extremely careful passing a gc tracked object
+    # from such an helper result to another one
+    # as argument, this could result in leaks
+    # Such result should be only from C code
+    # returned directly as results
+
     p = lltype.Ptr(rlist.LIST_OF_STR)
 
-    def RPyListOfString_New(length=lltype.Signed):
+    def _RPyListOfString_New(length=lltype.Signed):
         return rlist.ll_newlist(p, length)
 
-    def RPyListOfString_SetItem(l=p,
+    def _RPyListOfString_SetItem(l=p,
                                 index=lltype.Signed,
                                 newstring=lltype.Ptr(STR)):
         rlist.ll_setitem_nonneg(l, index, newstring)
