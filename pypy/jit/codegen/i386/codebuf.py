@@ -2,9 +2,6 @@ import os
 from ctypes import POINTER, cast, c_char, c_void_p, CFUNCTYPE, c_int
 from ri386 import I386CodeBuilder
 
-# Set this to enable/disable the CODE_DUMP stdout lines
-CODE_DUMP = False
-
 # ____________________________________________________________
 
 
@@ -51,21 +48,62 @@ class InMemoryCodeBuilder(I386CodeBuilder):
 
     def done(self):
         # normally, no special action is needed here
-        if CODE_DUMP:
-            self.dump_range(self._last_dump_start, self._pos)
+        if machine_code_dumper.enabled:
+            machine_code_dumper.dump_range(self, self._last_dump_start,
+                                           self._pos)
             self._last_dump_start = self._pos
 
-    def dump_range(self, start, end):
+    def log(self, msg):
+        if machine_code_dumper.enabled:
+            machine_code_dumper.dump(self, 'LOG', self._pos, msg)
+
+
+class MachineCodeDumper:
+    enabled = True
+    log_fd = -1
+    sys_executable = None
+
+    def open(self):
+        if self.log_fd < 0:
+            # check the environment for a file name
+            from pypy.rlib.ros import getenv
+            s = getenv('PYPYJITLOG')
+            if not s:
+                self.enabled = False
+                return False
+            try:
+                flags = os.O_WRONLY|os.O_CREAT|os.O_TRUNC
+                self.log_fd = os.open(s, flags, 0666)
+            except OSError:
+                os.write(2, "could not create log file\n")
+                self.enabled = False
+                return False
+            # log the executable name
+            from pypy.jit.codegen.hlinfo import highleveljitinfo
+            os.write(self.log_fd, 'BACKEND i386\n')
+            if highleveljitinfo.sys_executable:
+                os.write(self.log_fd, 'SYS_EXECUTABLE %s\n' % (
+                    highleveljitinfo.sys_executable,))
+        return True
+
+    def dump(self, cb, tag, pos, msg):
+        if not self.open():
+            return
+        line = '%s @%x +%d  %s\n' % (tag, cb.tell() - cb._pos, pos, msg)
+        os.write(self.log_fd, line)
+
+    def dump_range(self, cb, start, end):
         HEX = '0123456789ABCDEF'
         dump = []
         for p in range(start, end):
-            o = ord(self._data.contents[p])
+            o = ord(cb._data.contents[p])
             dump.append(HEX[o >> 4])
             dump.append(HEX[o & 15])
             if (p & 3) == 3:
                 dump.append(':')
-        os.write(2, 'CODE_DUMP @%x +%d  %s\n' % (self.tell() - self._pos,
-                                                 start, ''.join(dump)))
+        self.dump(cb, 'CODE_DUMP', start, ''.join(dump))
+
+machine_code_dumper = MachineCodeDumper()
 
 
 class MachineCodeBlock(InMemoryCodeBuilder):

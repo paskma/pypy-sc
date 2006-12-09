@@ -1,4 +1,6 @@
 import types
+import py
+from pypy.tool.ansi_print import ansi_log
 from pypy.objspace.flow import model as flowmodel
 from pypy.translator.unsimplify import varoftype
 from pypy.translator.backendopt.ssa import SSA_to_SSI
@@ -45,6 +47,8 @@ HintTypeSystem.instance = HintTypeSystem()
 
 
 class HintRTyper(RPythonTyper):
+    log = py.log.Producer("timeshifter")
+    py.log.setconsumer("timeshifter", ansi_log)
 
     def __init__(self, hannotator, rtyper, RGenOp):
         RPythonTyper.__init__(self, hannotator, 
@@ -66,8 +70,6 @@ class HintRTyper(RPythonTyper):
          self.r_RedBox)        = self.s_r_instanceof(rvalue.RedBox)
         (self.s_PtrRedBox,
          self.r_PtrRedBox)     = self.s_r_instanceof(rvalue.PtrRedBox)
-        (self.s_OopSpecDesc,
-         self.r_OopSpecDesc)   = self.s_r_instanceof(oop.OopSpecDesc)
         (self.s_ConstOrVar,
          self.r_ConstOrVar)    = self.s_r_instanceof(cgmodel.GenVarOrConst)
         (self.s_Queue,
@@ -144,14 +146,15 @@ class HintRTyper(RPythonTyper):
         self.ll_finish_jitstate = ll_finish_jitstate
 
         self.v_queue = varoftype(self.r_Queue.lowleveltype, 'queue')
+        #self.void_red_repr = VoidRedRepr(self)
 
     def specialize(self, origportalgraph=None, view=False):
         """
         Driver for running the timeshifter.
         """
-        self.type_system.perform_normalizations(self)
+##        self.type_system.perform_normalizations(self)
         bk = self.annotator.bookkeeper
-        bk.compute_after_normalization()
+##        bk.compute_after_normalization()
         entrygraph = self.annotator.translator.graphs[0]
         self.origportalgraph = origportalgraph
         if origportalgraph:
@@ -181,6 +184,7 @@ class HintRTyper(RPythonTyper):
             self.annotator.translator.view()     # in the middle
         for graph in seen:
             self.timeshift_graph(graph)
+        self.log.event("Timeshifted %d graphs." % (len(seen),))
 
         if origportalgraph:
             self.rewire_portal()
@@ -333,6 +337,7 @@ class HintRTyper(RPythonTyper):
         TYPES = [v.concretetype for v in origportalgraph.getargs()]
         argcolorandtypes = unrolling_iterable(zip(argcolors,
                                                   TYPES))
+        fetch_global_excdata = self.fetch_global_excdata
 
         def portalreentry(jitstate, *args):
             i = 0
@@ -383,11 +388,12 @@ class HintRTyper(RPythonTyper):
 
  
             gv_res = curbuilder.genop_call(sigtoken, gv_generated, args_gv)
+            fetch_global_excdata(jitstate)
+
             if RESTYPE == lltype.Void:
                 retbox = None
             else:
                 retbox = boxbuilder(reskind, gv_res)
-                
             jitstate.returnbox = retbox
             assert jitstate.next is None
             return jitstate
@@ -452,6 +458,20 @@ class HintRTyper(RPythonTyper):
     def make_new_lloplist(self, block):
         return HintLowLevelOpList(self)
 
+    def translate_no_return_value(self, hop):
+        op = hop.spaceop
+        if op.result.concretetype is not lltype.Void:
+            raise TyperError("the hint-annotator doesn't agree that '%s' "
+                             "returns a Void" % op.opname)
+        # try to avoid a same_as in common cases
+        if (len(hop.llops) > 0
+            and hop.llops[-1].result.concretetype is lltype.Void):
+            hop.llops[-1].result = op.result
+        else:
+            hop.llops.append(flowmodel.SpaceOperation('same_as',
+                                                      [c_void],
+                                                      op.result))
+
     def getgreenrepr(self, lowleveltype):
         try:
             return self.green_reprs[lowleveltype]
@@ -472,6 +492,12 @@ class HintRTyper(RPythonTyper):
             r = redreprcls(lowleveltype, self)
             self.red_reprs[lowleveltype] = r
             return r
+
+##    def getredrepr_or_none(self, lowleveltype):
+##        if lowleveltype is lltype.Void:
+##            return self.void_red_repr
+##        else:
+##            return self.getredrepr(lowleveltype)
 
 ##    def gethscolor(self, hs):
 ##        try:
@@ -590,7 +616,7 @@ class HintRTyper(RPythonTyper):
             hop.llops.append(hop.spaceop)
             return hop.spaceop.result
         else:
-            print "RED op", hop.spaceop
+            #print "RED op", hop.spaceop
             return None
 
     def default_translate_operation(self, hop):
@@ -615,6 +641,9 @@ class HintRTyper(RPythonTyper):
                                                ts.s_RedBox)
 
     def translate_op_debug_assert(self, hop):
+        pass
+
+    def translate_op_resume_point(self, hop):
         pass
 
     def translate_op_keepalive(self,hop):
@@ -650,6 +679,8 @@ class HintRTyper(RPythonTyper):
         c_deepfrozen = inputconst(lltype.Bool, hop.args_s[0].deepfrozen)
         structdesc = rcontainer.StructTypeDesc(self.RGenOp, PTRTYPE.TO)
         fielddesc = structdesc.getfielddesc(c_fieldname.value)
+        if fielddesc is None:   # Void field
+            return
         c_fielddesc = inputconst(lltype.Void, fielddesc)
         s_fielddesc = ts.rtyper.annotator.bookkeeper.immutablevalue(fielddesc)
         v_jitstate = hop.llops.getjitstate()
@@ -660,6 +691,8 @@ class HintRTyper(RPythonTyper):
 
     def translate_op_getarrayitem(self, hop):
         PTRTYPE = originalconcretetype(hop.args_s[0])
+        if PTRTYPE.TO.OF is lltype.Void:
+            return
         ts = self
         v_argbox, v_index = hop.inputargs(self.getredrepr(PTRTYPE),
                                           self.getredrepr(lltype.Signed))
@@ -698,6 +731,8 @@ class HintRTyper(RPythonTyper):
         ts = self
         PTRTYPE = originalconcretetype(hop.args_s[0])
         VALUETYPE = originalconcretetype(hop.args_s[2])
+        if VALUETYPE is lltype.Void:
+            return
         if hop.args_v[0] == ts.cexcdata:
             # reading one of the exception boxes (exc_type or exc_value)
             fieldname = hop.args_v[1].value
@@ -722,6 +757,7 @@ class HintRTyper(RPythonTyper):
         v_destbox = hop.llops.as_ptrredbox(v_destbox)
         structdesc = rcontainer.StructTypeDesc(self.RGenOp, PTRTYPE.TO)
         fielddesc = structdesc.getfielddesc(c_fieldname.value)
+        assert fielddesc is not None   # skipped above
         c_fielddesc = inputconst(lltype.Void, fielddesc)
         s_fielddesc = ts.rtyper.annotator.bookkeeper.immutablevalue(fielddesc)
         v_jitstate = hop.llops.getjitstate()
@@ -733,6 +769,8 @@ class HintRTyper(RPythonTyper):
     def translate_op_setarrayitem(self, hop):
         PTRTYPE = originalconcretetype(hop.args_s[0])
         VALUETYPE = PTRTYPE.TO.OF
+        if VALUETYPE is lltype.Void:
+            return
         ts = self
         v_argbox, v_index, v_valuebox= hop.inputargs(self.getredrepr(PTRTYPE),
                                                      self.getredrepr(lltype.Signed),
@@ -1188,8 +1226,9 @@ class HintRTyper(RPythonTyper):
         else:
             s_result = ts.s_RedBox
 
-        s_oopspecdesc  = ts.s_OopSpecDesc
-        ll_oopspecdesc = ts.annhelper.delayedconst(ts.r_OopSpecDesc,
+        (s_oopspecdesc,
+         r_oopspecdesc) = self.s_r_instanceof(oopspecdesc.__class__)
+        ll_oopspecdesc = ts.annhelper.delayedconst(r_oopspecdesc,
                                                    oopspecdesc)
         c_oopspecdesc  = hop.llops.genconst(ll_oopspecdesc)
         v_jitstate = hop.llops.getjitstate()
@@ -1263,10 +1302,16 @@ class HintRTyper(RPythonTyper):
             s_result = self.s_RedBox
         else:
             s_result = annmodel.s_None
-        return hop.llops.genmixlevelhelpercall(rtimeshift.ll_gen_residual_call,
+        v_res = hop.llops.genmixlevelhelpercall(
+                                 rtimeshift.ll_gen_residual_call,
                                  [self.s_JITState, s_calldesc, self.s_RedBox],
                                  [v_jitstate,      c_calldesc, v_funcbox    ],
                                  s_result)
+        # XXX do something to do this only if the graph can raise
+        hop.llops.genmixlevelhelpercall(self.fetch_global_excdata,
+                                        [self.s_JITState], [v_jitstate],
+                                        annmodel.s_None)
+        return v_res
 
     def translate_op_residual_gray_call(self, hop):
         self.translate_op_residual_red_call(hop, color='gray')
@@ -1423,6 +1468,14 @@ class RedStructRepr(RedRepr):
         return hop.llops.as_redbox(v_ptrbox)
 
 
+##class VoidRedRepr(Repr):
+##    def __init__(self, hrtyper):
+##        self.lowleveltype = hrtyper.r_RedBox.lowleveltype
+
+##    def convert_const(self, ll_value):
+##        return lltype.nullptr(self.lowleveltype.TO)
+
+
 class BlueRepr(Repr):
     # XXX todo
     pass
@@ -1484,6 +1537,8 @@ class __extend__(pairtype(GreenRepr, RedRepr)):
                         [ts.s_JITState, r_from.annotation()],
                         [v_jitstate,    v],
                         ts.s_RedBox)
+
+c_void = flowmodel.Constant(None, concretetype=lltype.Void)
 
 # ____________________________________________________________
 

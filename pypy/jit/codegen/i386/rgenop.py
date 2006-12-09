@@ -1,4 +1,4 @@
-import sys
+import sys, py
 from pypy.rlib.objectmodel import specialize
 from pypy.rpython.lltypesystem import lltype, llmemory
 from pypy.jit.codegen.i386.ri386 import *
@@ -218,7 +218,6 @@ class FlexSwitch(CodeGenSwitch):
 
 class Builder(GenBuilder):
 
-
     def __init__(self, rgenop, mc, stackdepth):
         self.rgenop = rgenop
         self.stackdepth = stackdepth
@@ -257,18 +256,33 @@ class Builder(GenBuilder):
         genmethod = getattr(self, 'op_' + opname)
         return genmethod(gv_arg1, gv_arg2)
 
-    def genop_getfield(self, offset, gv_ptr):
-        # XXX only for int fields
+    def genop_getfield(self, (offset, fieldsize), gv_ptr):
         self.mc.MOV(edx, gv_ptr.operand(self))
-        return self.returnvar(mem(edx, offset))
+        if fieldsize == WORD:
+            op = mem(edx, offset)
+        else:
+            if fieldsize == 1:
+                op = mem8(edx, offset)
+            else:
+                assert fieldsize == 2
+                op = mem(edx, offset)
+            self.mc.MOVZX(eax, op)
+            op = eax
+        return self.returnvar(op)
 
-    def genop_setfield(self, offset, gv_ptr, gv_value):
-        # XXX only for ints for now.
+    def genop_setfield(self, (offset, fieldsize), gv_ptr, gv_value):
         self.mc.MOV(eax, gv_value.operand(self))
         self.mc.MOV(edx, gv_ptr.operand(self))
-        self.mc.MOV(mem(edx, offset), eax)
+        if fieldsize == 1:
+            self.mc.MOV(mem8(edx, offset), al)
+        else:
+            if fieldsize == 2:
+                self.mc.o16()    # followed by the MOV below
+            else:
+                assert fieldsize == WORD
+            self.mc.MOV(mem(edx, offset), eax)
 
-    def genop_getsubstruct(self, offset, gv_ptr):
+    def genop_getsubstruct(self, (offset, fieldsize), gv_ptr):
         self.mc.MOV(edx, gv_ptr.operand(self))
         self.mc.LEA(eax, mem(edx, offset))
         return self.returnvar(eax)
@@ -346,26 +360,23 @@ class Builder(GenBuilder):
         return self.returnvar(eax)
         
     def genop_call(self, sigtoken, gv_fnptr, args_gv):
+        numargs = sigtoken      # for now
         MASK = CALL_ALIGN-1
         if MASK:
-            final_depth = self.stackdepth
-            for gv_arg in args_gv:
-                if gv_arg is not None:
-                    final_depth += 1
+            final_depth = self.stackdepth + numargs
             delta = (final_depth+MASK)&~MASK-final_depth
             if delta:
                 self.mc.SUB(esp, imm(delta*WORD))
                 self.stackdepth += delta
-        for i in range(len(args_gv)-1, -1, -1):
+        for i in range(numargs-1, -1, -1):
             gv_arg = args_gv[i]
-            if gv_arg is not None:
-                self.push(gv_arg.operand(self))
+            self.push(gv_arg.operand(self))
         if gv_fnptr.is_const:
             target = gv_fnptr.revealconst(lltype.Signed)
             self.mc.CALL(rel32(target))
         else:
             self.mc.CALL(gv_fnptr.operand(self))
-        # XXX only for int return_kind
+        # XXX only for int return_kind, check calling conventions
         return self.returnvar(eax)
 
     def genop_same_as(self, kind, gv_x):
@@ -424,6 +435,9 @@ class Builder(GenBuilder):
 
     def show_incremental_progress(self):
         pass
+
+    def log(self, msg):
+        self.mc.log(msg)
 
     # ____________________________________________________________
 
@@ -551,13 +565,13 @@ class Builder(GenBuilder):
 
     def op_int_lshift(self, gv_x, gv_y):
         self.mc.MOV(eax, gv_x.operand(self))
-        self.mc.MOV(ecx, gv_y.operand(self))
+        self.mc.MOV(ecx, gv_y.operand(self))   # XXX check if ecx >= 32
         self.mc.SHL(eax, cl)
         return self.returnvar(eax)
 
     def op_int_rshift(self, gv_x, gv_y):
         self.mc.MOV(eax, gv_x.operand(self))
-        self.mc.MOV(ecx, gv_y.operand(self))
+        self.mc.MOV(ecx, gv_y.operand(self))   # XXX check if ecx >= 32
         self.mc.SAR(eax, cl)
         return self.returnvar(eax)
 
@@ -621,7 +635,7 @@ class Builder(GenBuilder):
 
     def op_uint_rshift(self, gv_x, gv_y):
         self.mc.MOV(eax, gv_x.operand(self))
-        self.mc.MOV(ecx, gv_y.operand(self))
+        self.mc.MOV(ecx, gv_y.operand(self))   # XXX check if ecx >= 32
         self.mc.SHR(eax, cl)
         return self.returnvar(eax)
 
@@ -814,13 +828,13 @@ class ReplayBuilder(GenBuilder):
     def genop2(self, opname, gv_arg1, gv_arg2):
         return dummy_var
 
-    def genop_getfield(self, offset, gv_ptr):
+    def genop_getfield(self, fieldtoken, gv_ptr):
         return dummy_var
 
-    def genop_setfield(self, offset, gv_ptr, gv_value):
+    def genop_setfield(self, fieldtoken, gv_ptr, gv_value):
         return dummy_var
 
-    def genop_getsubstruct(self, offset, gv_ptr):
+    def genop_getsubstruct(self, fieldtoken, gv_ptr):
         return dummy_var
 
     def genop_getarrayitem(self, arraytoken, gv_ptr, gv_index):
@@ -875,6 +889,8 @@ class ReplayBuilder(GenBuilder):
 class RI386GenOp(AbstractRGenOp):
     from pypy.jit.codegen.i386.codebuf import MachineCodeBlock
 
+    MC_SIZE = 65536
+
     def __init__(self):
         self.mcs = []   # machine code blocks where no-one is currently writing
         self.keepalive_gc_refs = [] 
@@ -884,7 +900,8 @@ class RI386GenOp(AbstractRGenOp):
             # XXX think about inserting NOPS for alignment
             return self.mcs.pop()
         else:
-            return self.MachineCodeBlock(65536)   # XXX supposed infinite for now
+            # XXX supposed infinite for now
+            return self.MachineCodeBlock(self.MC_SIZE)
 
     def close_mc(self, mc):
         # an open 'mc' is ready for receiving code... but it's also ready
@@ -926,7 +943,12 @@ class RI386GenOp(AbstractRGenOp):
     @staticmethod
     @specialize.memo()
     def fieldToken(T, name):
-        return llmemory.offsetof(T, name)
+        FIELD = getattr(T, name)
+        if isinstance(FIELD, lltype.ContainerType):
+            fieldsize = 0      # not useful for getsubstruct
+        else:
+            fieldsize = llmemory.sizeof(FIELD)
+        return (llmemory.offsetof(T, name), fieldsize)
 
     @staticmethod
     @specialize.memo()
@@ -959,12 +981,18 @@ class RI386GenOp(AbstractRGenOp):
     @staticmethod
     @specialize.memo()
     def kindToken(T):
+        if T is lltype.Float:
+            py.test.skip("not implemented: floats in the i386 back-end")
         return None     # for now
 
     @staticmethod
     @specialize.memo()
     def sigToken(FUNCTYPE):
-        return len(FUNCTYPE.ARGS)     # for now
+        numargs = 0
+        for ARG in FUNCTYPE.ARGS:
+            if ARG is not lltype.Void:
+                numargs += 1
+        return numargs     # for now
 
     @staticmethod
     def erasedType(T):

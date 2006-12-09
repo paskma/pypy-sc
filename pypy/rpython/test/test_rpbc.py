@@ -1492,6 +1492,14 @@ class BaseTestRPBC(BaseRtypingTest):
         res = self.interpret(f, [2])
         assert res == False
 
+
+class TestLLtype(BaseTestRPBC, LLRtypeMixin):
+    pass
+
+class TestOOtype(BaseTestRPBC, OORtypeMixin):
+    pass
+
+# ____________________________________________________________
 # We don't care about the following test_hlinvoke tests working on
 # ootype. Maybe later. This kind of thing is only used in rdict
 # anyway, that will probably have a different kind of implementation
@@ -1744,11 +1752,17 @@ def test_hlinvoke_pbc_method_hltype():
     res = interp.eval_graph(ll_h_graph, [None, c_f, c_a])
     assert typeOf(res) == A_repr.lowleveltype
 
-class TestLLtype(BaseTestRPBC, LLRtypeMixin):
-    pass
+# ____________________________________________________________
 
-class TestOOtype(BaseTestRPBC, OORtypeMixin):
-    pass
+class TestLLtypeSmallFuncSets(TestLLtype):
+    def setup_class(cls):
+        from pypy.config.pypyoption import get_pypy_config
+        cls.config = get_pypy_config(translating=True)
+        cls.config.translation.withsmallfuncsets = 10
+
+    def interpret(self, fn, args, **kwds):
+        kwds['config'] = self.config
+        return TestLLtype.interpret(self, fn, args, **kwds)
 
 def test_smallfuncsets_basic():
     from pypy.translator.translator import TranslationContext, graphof
