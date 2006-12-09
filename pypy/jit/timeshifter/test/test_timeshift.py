@@ -1,6 +1,6 @@
 import py
 from pypy.translator.translator import TranslationContext, graphof
-from pypy.jit.hintannotator.annotator import HintAnnotator
+from pypy.jit.hintannotator.annotator import HintAnnotator, HintAnnotatorPolicy
 from pypy.jit.hintannotator.bookkeeper import HintBookkeeper
 from pypy.jit.hintannotator.model import *
 from pypy.jit.timeshifter.hrtyper import HintRTyper, originalconcretetype
@@ -14,13 +14,11 @@ from pypy.rpython.module.support import LLSupport
 from pypy.annotation import model as annmodel
 from pypy.rpython.llinterp import LLInterpreter, LLException
 from pypy.objspace.flow.model import checkgraph
-from pypy.annotation.policy import AnnotatorPolicy
 from pypy.translator.backendopt.inline import auto_inlining
 from pypy import conftest
 from pypy.jit.conftest import Benchmark
 
-P_NOVIRTUAL = AnnotatorPolicy()
-P_NOVIRTUAL.novirtualcontainer = True
+P_NOVIRTUAL = HintAnnotatorPolicy(novirtualcontainer=True)
 
 def getargtypes(annotator, values):
     return [annotation(annotator, x) for x in values]
@@ -683,6 +681,17 @@ class TestTimeshift(TimeshiftingTests):
         res = self.timeshift(ll_function, [0], [])
         assert res == 4 * 4
 
+    def test_degenerate_with_voids(self):
+        S = lltype.GcStruct('S', ('y', lltype.Void),
+                                 ('x', lltype.Signed))
+        def ll_function():
+            s = lltype.malloc(S)
+            s.x = 123
+            return s
+        ll_function.convert_result = lambda s: str(s.x)
+        res = self.timeshift(ll_function, [], [], policy=P_NOVIRTUAL)
+        assert res == "123"
+
     def test_plus_minus_all_inlined(self):
         def ll_plus_minus(s, x, y):
             acc = x
@@ -794,6 +803,20 @@ class TestTimeshift(TimeshiftingTests):
                               policy=P_NOVIRTUAL)
          assert res == -42
          self.check_insns(malloc_varsize=1)
+
+    def test_array_of_voids(self):
+        A = lltype.GcArray(lltype.Void)
+        def ll_function(n):
+            a = lltype.malloc(A, 3)
+            a[1] = None
+            b = a[n]
+            res = a, b
+            keepalive_until_here(b)      # to keep getarrayitem around
+            return res
+        ll_function.convert_result = lambda x: str(len(x.item0))
+
+        res = self.timeshift(ll_function, [2], [], policy=P_NOVIRTUAL)
+        assert res == "3"
 
     def test_red_propagate(self):
         S = lltype.GcStruct('S', ('n', lltype.Signed))
@@ -1110,3 +1133,80 @@ class TestTimeshift(TimeshiftingTests):
         res = self.timeshift(f, [4, 5], [0, 1], policy=P_NOVIRTUAL)
         assert res == 42
         self.check_insns({})
+
+    def test_green_red_mismatch_in_call(self):
+        #py.test.skip("WIP")
+        def add(a,b, u):
+            return a+b
+
+        def f(x, y, u):
+            r = add(x+1,y+1, u)
+            z = x+y
+            z = hint(z, concrete=True) + r   # this checks that 'r' is green
+            return hint(z, variable=True)
+
+        res = self.timeshift(f, [4, 5, 0], [], policy=P_NOVIRTUAL)
+        assert res == 20
+
+    def test_residual_red_call(self):
+        def g(x):
+            return x+1
+
+        def f(x):
+            return 2*g(x)
+
+        class StopAtGPolicy(HintAnnotatorPolicy):
+            novirtualcontainer = True
+
+            def look_inside_graph(self, graph):
+                if graph.name == 'g':
+                    return False
+                return True
+
+        res = self.timeshift(f, [20], [], policy=StopAtGPolicy())
+        assert res == 42
+        self.check_insns(int_add=0)
+
+    def test_residual_red_call_with_exc(self):
+        def h(x):
+            if x > 0:
+                return x+1
+            else:
+                raise ValueError
+
+        def g(x):
+            return 2*h(x)
+
+        def f(x):
+            try:
+                return g(x)
+            except ValueError:
+                return 7
+
+        class StopAtHPolicy(HintAnnotatorPolicy):
+            novirtualcontainer = True
+
+            def look_inside_graph(self, graph):
+                if graph.name == 'h':
+                    return False
+                return True
+
+        stop_at_h = StopAtHPolicy()
+
+        res = self.timeshift(f, [20], [], policy=stop_at_h)
+        assert res == 42
+        self.check_insns(int_add=0)
+
+        res = self.timeshift(f, [-20], [], policy=stop_at_h)
+        assert res == 7
+        self.check_insns(int_add=0)
+
+    def test_red_call_ignored_result(self):
+        def g(n):
+            return n * 7
+        def f(n, m):
+            g(n)   # ignore the result
+            return m
+
+        res = self.timeshift(f, [4, 212], [], policy=P_NOVIRTUAL)
+        assert res == 212
