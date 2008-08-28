@@ -10,9 +10,9 @@ CPYTHON_API_VERSION        = 1012
 PYPY_VERSION               = (1, 0, 0, "alpha", '?')
 # the last item is replaced by the svn revision ^^^
 
-SVN_URL = "$HeadURL$"[10:-28]
+SVN_URL = "ssh://paskmawrk/gitrepo/pypy.gin"
 
-REV = "$LastChangedRevision$"[22:-2]
+REV = "100000"
 
 
 import pypy
