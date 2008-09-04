@@ -93,6 +93,7 @@ CASTS = {
     (ootype.Signed,           ootype.UnsignedLongLong): jvm.I2L,
     (ootype.SignedLongLong,   ootype.Signed):           jvm.L2I,
     (ootype.UnsignedLongLong, ootype.SignedLongLong):   None,
+    (ootype.UnsignedLongLong, ootype.Unsigned):         jvm.L2I,
     }
 
 class _CastPrimitive(MicroInstruction):
