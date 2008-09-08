@@ -23,4 +23,7 @@ public interface Interlink {
     public Object recordFloatFloat(double a, double b);
     public Object recordFloatSigned(double a, int b);
     public Object recordSignedSigned(int a, int b);
+
+    public int fool(int a);
+    public int thread_entry_point();
 }

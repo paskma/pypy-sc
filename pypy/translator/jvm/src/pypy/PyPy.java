@@ -919,7 +919,40 @@ public class PyPy implements Constants {
             startTime = ll_time_time();
         } while (startTime < endTime);
     }
+
+    public void ll_foo_bar(double seconds)
+    {
+        System.out.println("Sleeping...");
+        ll_time_sleep(seconds);
+        Object x = interlink.recordStringString("a", "b");
+        System.out.println("" + x.getClass());
+        System.out.println(interlink.fool(5));
+        
+        for (int i = 0; i < 4; i++)
+        {
+        Thread t = new Thread(){
+            public void run()
+            {
+                int n = interlink.fool(6);
+                System.out.println("Threaded: " + n);
+            }
+        };
+        t.start();
+        }
+        //ll_time_sleep(5);
+    }
     
+    public void ll_foo_start_new_thread()
+    {
+        Thread t = new Thread() {
+            public void run()
+            {
+                interlink.thread_entry_point();
+            }
+        };
+        t.start();
+    }
+
     public String ll_join(String a, String b)
     {
         return a + "/" + b; // XXX
