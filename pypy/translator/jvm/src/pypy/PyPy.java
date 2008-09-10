@@ -26,10 +26,14 @@ public class PyPy implements Constants {
     
     public final Interlink interlink;
     public final ll_os os;
+    public final HashMap locks;
+    public int lockCount;
 
     public PyPy(Interlink interlink) {
         this.interlink = interlink;
         this.os = new ll_os(interlink);
+        this.locks = new HashMap();
+        this.lockCount = 0;
     }
 
     public final static long LONG_MAX = Long.MAX_VALUE;
@@ -944,6 +948,7 @@ public class PyPy implements Constants {
     
     public void ll_foo_start_new_thread()
     {
+        System.out.println("ll_foo_start_new_thread");
         Thread t = new Thread() {
             public void run()
             {
@@ -952,6 +957,62 @@ public class PyPy implements Constants {
         };
         t.start();
     }
+    
+    public synchronized int ll_foo_allocate_lock()
+    {
+        //System.out.println("ll_foo_allocate_lock");
+        SimpleLock lock = new SimpleLock();
+        lockCount++;
+        locks.put(lockCount, lock);
+        return lockCount;
+    }
+    
+    public void ll_foo_acquire_lock(int lockNum)
+    {
+        //System.out.println("ll_foo_acquire_lock");
+        ((SimpleLock)locks.get(lockNum)).acquire();
+    }
+
+    public void ll_foo_release_lock(int lockNum)
+    {
+        //System.out.println("ll_foo_release_lock");
+        ((SimpleLock)locks.get(lockNum)).release();
+    }
+    
+    
+    class SimpleLock
+    {
+        boolean locked;
+        public SimpleLock()
+        {
+            locked = false;
+        }
+
+        public synchronized void acquire()
+        {
+            while (locked)
+            {
+                try
+                {
+                    wait();
+                }
+                catch(InterruptedException ex)
+                {
+                    System.out.println(ex.toString());
+                    throw new RuntimeException(ex);
+                }
+            }
+            locked = true;
+        }
+
+        public synchronized void release()
+        {
+            locked = false;
+            notify();
+        }
+    }
+    
+    
 
     public String ll_join(String a, String b)
     {

@@ -61,11 +61,12 @@ def fool(a):
         time.sleep(0.2)
     return a+111
 
-import jthreading
+import parlib.rthreading
 
 @with_types([])
 def thread_entry_point():
-    jthreading.boot.bootstrap()
+    print "thread_entry_point"
+    parlib.rthreading.boot.bootstrap()
     #jthreading.blekota()
     #jthreading.boot.jekota()
     return 0
