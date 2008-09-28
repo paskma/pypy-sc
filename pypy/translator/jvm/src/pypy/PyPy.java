@@ -948,7 +948,7 @@ public class PyPy implements Constants {
     
     public void ll_foo_start_new_thread()
     {
-        System.out.println("ll_foo_start_new_thread");
+        //System.out.println("ll_foo_start_new_thread");
         Thread t = new Thread() {
             public void run()
             {
