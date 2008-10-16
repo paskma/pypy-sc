@@ -79,14 +79,24 @@ class FunctionCache(Cache):
 
 # _________________________________________________________________________
 # a simplified version of the basic printing routines, for RPython programs
-
+class StdOutBuffer:
+    linebuf = []
+stdoutbuffer = StdOutBuffer()
 def rpython_print_item(s):
+    buf = stdoutbuffer.linebuf
+    for c in s:
+        buf.append(c)
+    buf.append(' ')
+def rpython_print_newline():
+    buf = stdoutbuffer.linebuf
+    if buf:
+        buf[-1] = '\n'
+        s = ''.join(buf)
+        del buf[:]
+    else:
+        s = '\n'
     import os
     os.write(1, s)
-
-def rpython_print_newline():
-    import os
-    os.write(1, "\n")
 # _________________________________________________________________________
 
 compiled_funcs = FunctionCache()
