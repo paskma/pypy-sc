@@ -16,7 +16,7 @@ CFLAGS = os.getenv("CFLAGS")
 if CFLAGS:
     CFLAGS = CFLAGS.split()
 else:
-    CFLAGS = ['-O3']
+    CFLAGS = ['-O0']
 
 class ExternalCompilationInfo(object):
 
