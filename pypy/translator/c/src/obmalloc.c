@@ -208,9 +208,13 @@
  */
 #define SIMPLELOCK_DECL(lock)	/* simple lock declaration		*/
 #define SIMPLELOCK_INIT(lock)	/* allocate (if needed) and initialize	*/
+//#define SIMPLELOCK_INIT(lock) fprintf(stderr, "MALLOC LOCK INIT %s:%d\n", __FILE__, __LINE__)
 #define SIMPLELOCK_FINI(lock)	/* free/destroy an existing lock 	*/
 #define SIMPLELOCK_LOCK(lock)	/* acquire released lock */
+//#define SIMPLELOCK_LOCK(lock) fprintf(stderr, "LOCKING MALLOC LOCK %s:%d\n", __FILE__, __LINE__)
 #define SIMPLELOCK_UNLOCK(lock)	/* release acquired lock */
+#define SIMPLELOCK_UNLOCK(lock) fprintf(stderr, "UN-LOCKING MALLOC LOCK %s:%d\n", __FILE__, __LINE__)
+
 
 /*
  * Basic types
@@ -263,11 +267,59 @@ typedef struct pool_header *poolp;
 /*
  * This malloc lock
  */
+
 SIMPLELOCK_DECL(_malloc_lock)
-#define LOCK()		SIMPLELOCK_LOCK(_malloc_lock)
-#define UNLOCK()	SIMPLELOCK_UNLOCK(_malloc_lock)
+#define LOCK()		_malloc_mutex_lock()
+#define UNLOCK()	_malloc_mutex_unlock()
 #define LOCK_INIT()	SIMPLELOCK_INIT(_malloc_lock)
 #define LOCK_FINI()	SIMPLELOCK_FINI(_malloc_lock)
+
+
+static pthread_mutex_t * _malloc_mutex = NULL;
+static pthread_mutexattr_t _malloc_mutex_attrs;
+
+static void _malloc_mutex_init(void)
+{
+int suc;
+pthread_mutex_t * tmp;
+pthread_mutexattr_t tmp_attrs;
+	if (_malloc_mutex)
+		return;
+	else
+	{
+		tmp = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
+		assert(tmp);
+		pthread_mutexattr_init(&tmp_attrs);
+		pthread_mutexattr_settype(&tmp_attrs, PTHREAD_MUTEX_RECURSIVE);
+		suc = pthread_mutex_init(tmp, &tmp_attrs);
+		assert(!suc);
+		if (_malloc_mutex)
+			return;
+			//assert(0); //race
+		else
+		{
+			_malloc_mutex = tmp;
+			_malloc_mutex_attrs = tmp_attrs;
+		}
+		return;
+	}
+}
+
+static void _malloc_mutex_lock(void)
+{
+	_malloc_mutex_init();
+	int suc = pthread_mutex_lock(_malloc_mutex);
+	assert(!suc);
+	return;
+}
+
+int _malloc_mutex_unlock(void)
+{
+	_malloc_mutex_init();
+	int suc = pthread_mutex_unlock(_malloc_mutex);
+	assert(!suc);
+	return;
+}
 
 /*
  * Pool table -- headed, circular, doubly-linked lists of partially used pools.
