@@ -35,3 +35,18 @@ class RegisterFoo(BaseLazyRegistering):
     def register_foo_dumpln(self):
         return extdef([str], None, llimpl=None,
                       export_name='ll_foo.ll_foo_dumpln')
+
+    @registering(foo.jpf_random)
+    def register_foo_jpf_random(self):
+        return extdef([int], int, llimpl=None,
+                      export_name='ll_foo.ll_foo_jpf_random')
+
+    @registering(foo.jpf_begin_atomic)
+    def register_foo_jpf_begin_atomic(self):
+        return extdef([], None, llimpl=None,
+                      export_name='ll_foo.ll_foo_jpf_begin_atomic')
+
+    @registering(foo.jpf_end_atomic)
+    def register_foo_jpf_end_atomic(self):
+        return extdef([], None, llimpl=None,
+                      export_name='ll_foo.ll_foo_jpf_end_atomic')

@@ -9,6 +9,8 @@ import java.util.Map;
 import java.text.DecimalFormat;
 import java.lang.reflect.Array;
 
+import gov.nasa.jpf.jvm.Verify;
+
 /**
  * Class with a number of utility routines.  One instance of this is
  * created by the PyPy entrypoint, and paired with an appropriate
@@ -927,6 +929,21 @@ public class PyPy implements Constants {
     public void ll_foo_dumpln(String s)
     {
         System.out.println(s);
+    }
+    
+    public int ll_foo_jpf_random(int max)
+    {
+        return Verify.random(max);
+    }
+    
+    public void ll_foo_jpf_begin_atomic()
+    {
+        Verify.beginAtomic();
+    }
+    
+    public void ll_foo_jpf_end_atomic()
+    {
+        Verify.endAtomic();
     }
 
     public void ll_foo_bar(double seconds)
