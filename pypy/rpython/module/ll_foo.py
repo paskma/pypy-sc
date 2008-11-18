@@ -30,3 +30,8 @@ class RegisterFoo(BaseLazyRegistering):
     def register_foo_release_lock(self):
         return extdef([int], None, llimpl=None,
                       export_name='ll_foo.ll_foo_release_lock')
+
+    @registering(foo.dumpln)
+    def register_foo_dumpln(self):
+        return extdef([str], None, llimpl=None,
+                      export_name='ll_foo.ll_foo_dumpln')

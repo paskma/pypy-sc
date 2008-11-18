@@ -924,6 +924,11 @@ public class PyPy implements Constants {
         } while (startTime < endTime);
     }
 
+    public void ll_foo_dumpln(String s)
+    {
+        System.out.println(s);
+    }
+
     public void ll_foo_bar(double seconds)
     {
         System.out.println("Sleeping...");
