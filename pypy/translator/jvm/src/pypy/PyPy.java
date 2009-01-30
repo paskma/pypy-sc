@@ -1000,41 +1000,6 @@ public class PyPy implements Constants {
         //System.out.println("ll_foo_release_lock");
         ((SimpleLock)locks.get(lockNum)).release();
     }
-    
-    
-    class SimpleLock
-    {
-        boolean locked;
-        public SimpleLock()
-        {
-            locked = false;
-        }
-
-        public synchronized void acquire()
-        {
-            while (locked)
-            {
-                try
-                {
-                    wait();
-                }
-                catch(InterruptedException ex)
-                {
-                    System.out.println(ex.toString());
-                    throw new RuntimeException(ex);
-                }
-            }
-            locked = true;
-        }
-
-        public synchronized void release()
-        {
-            locked = false;
-            notify();
-        }
-    }
-    
-    
 
     public String ll_join(String a, String b)
     {
