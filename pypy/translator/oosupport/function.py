@@ -28,7 +28,7 @@ class Function(object):
     
     auto_propagate_exceptions = False
 
-    def __init__(self, db, graph, name = None, is_method = False, is_entrypoint = False):
+    def __init__(self, db, graph, name = None, is_method = False, is_entrypoint = False, has_monitor = False):
         self.db = db
         self.cts = db.genoo.TypeSystem(db)
         self.graph = graph
@@ -37,6 +37,7 @@ class Function(object):
         self.is_entrypoint = is_entrypoint
         self.generator = None # set in render()
         self.label_counters = {}
+        self.has_monitor = has_monitor
         
         # If you want to enumerate args/locals before processing, then
         # add these functions into your __init__() [they are defined below]

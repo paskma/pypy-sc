@@ -143,6 +143,21 @@ class Database(OODatabase):
         jrettype = self.lltype_to_cts(RESULT)
         return jargtypes, jrettype
     
+    def _has_monitor(self, graph):
+        """
+        Whether function is synchronized
+        """
+        for block in graph.iterblocks():
+            for op in block.operations:
+                try:
+                    PATTERN = 'oMONITOR_ENTER'
+                    first_arg = op.args[0].value
+                    if PATTERN == str(first_arg): #probably tweaked __eq__
+                        return True
+                except AttributeError, ex:
+                    pass
+        return False
+
     def _function_for_graph(self, classobj, funcnm, is_static, graph):
         
         """
@@ -151,7 +166,7 @@ class Database(OODatabase):
         """
         jargtypes, jrettype = self.types_for_graph(graph)
         funcobj = node.GraphFunction(
-            self, classobj, funcnm, jargtypes, jrettype, graph, is_static)
+            self, classobj, funcnm, jargtypes, jrettype, graph, is_static, has_monitor=self._has_monitor(graph))
         return funcobj
     
     def _translate_record(self, OOTYPE):
