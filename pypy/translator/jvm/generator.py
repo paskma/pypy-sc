@@ -919,7 +919,12 @@ class JasminGenerator(JVMGenerator):
         def jasmin_syntax(arg):
             if hasattr(arg, 'jasmin_syntax'): return arg.jasmin_syntax()
             return str(arg)
-        strargs = [jasmin_syntax(arg) for arg in args]
+        def rewrite_wait_notify(strarg):
+            if strarg.endswith('/oWAIT()V'): return 'java/lang/Object/wait()V';
+            if strarg.endswith('/oNOTIFY()V'): return 'java/lang/Object/notify()V';
+            if strarg.endswith('/oNOTIFYALL()V'): return 'java/lang/Object/notifyAll()V';
+            return strarg
+        strargs = [rewrite_wait_notify(jasmin_syntax(arg)) for arg in args]
         instr_text = '%s %s' % (jvmstr, " ".join(strargs))
         self.curclass.out('    .line %d\n' % self.curclass.line_number)
         self.curclass.out('    %s\n' % (instr_text,))
