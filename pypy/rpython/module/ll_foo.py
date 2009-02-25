@@ -31,6 +31,16 @@ class RegisterFoo(BaseLazyRegistering):
         return extdef([int], None, llimpl=None,
                       export_name='ll_foo.ll_foo_release_lock')
 
+    @registering(foo.acquire_boot_lock)
+    def register_foo_acquire_boot_lock(self):
+        return extdef([], None, llimpl=None,
+                      export_name='ll_foo.ll_foo_acquire_boot_lock')
+
+    @registering(foo.release_boot_lock)
+    def register_foo_release_boot_lock(self):
+        return extdef([], None, llimpl=None,
+                      export_name='ll_foo.ll_foo_release_boot_lock')
+
     @registering(foo.dumpln)
     def register_foo_dumpln(self):
         return extdef([str], None, llimpl=None,

@@ -30,12 +30,14 @@ public class PyPy implements Constants {
     public final ll_os os;
     public final HashMap locks;
     public int lockCount;
+    //private SimpleLock bootLock;
 
     public PyPy(Interlink interlink) {
         this.interlink = interlink;
         this.os = new ll_os(interlink);
         this.locks = new HashMap();
         this.lockCount = 0;
+        //this.bootLock = new SimpleLock();
     }
 
     public final static long LONG_MAX = Long.MAX_VALUE;
@@ -1000,6 +1002,34 @@ public class PyPy implements Constants {
         //System.out.println("ll_foo_release_lock");
         ((SimpleLock)locks.get(lockNum)).release();
     }
+
+    private boolean locked = false;
+    public synchronized void ll_foo_acquire_boot_lock()
+    {
+        //bootLock.acquire();
+            while (locked)
+            {
+                try
+                {
+                    wait();
+                }
+                catch(InterruptedException ex)
+                {
+                    System.out.println(ex.toString());
+                    throw new RuntimeException(ex);
+                }
+            }
+            locked = true;
+    }
+
+    public synchronized void ll_foo_release_boot_lock()
+    {
+        //bootLock.release();
+        locked = false;
+        notify();
+    }
+
+    
 
     public String ll_join(String a, String b)
     {
