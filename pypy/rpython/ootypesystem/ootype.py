@@ -795,7 +795,8 @@ class _instance(object):
         return '<%s>' % (self,)
 
     def __str__(self):
-        return '%r inst at 0x%x' % (self._TYPE._name, uid(self))
+        #return '%r inst at 0x%x' % (self._TYPE._name, uid(self))
+        return '%r inst' % (self._TYPE._name)
 
     def __getattr__(self, name):
         DEFINST, meth = self._TYPE._lookup(name)
@@ -1201,6 +1202,9 @@ class _string(_builtin_type):
 
     def __cmp__(self, other):
         return cmp(self._str, other._str)
+
+    def __repr__(self):
+        return "ootype._string inst"
 
     def make_string(self, value):
         if self._TYPE is String:

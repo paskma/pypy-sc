@@ -17,9 +17,9 @@ def pers_id(x):
      if raw not in pers_store:
          pers_counter += 1
          pers_store[raw] = pers_counter
-         print "PERSID NEW %d" % pers_counter
+         #print "PERSID NEW %d" % pers_counter
 
-     print "PERSID->%d" % (pers_store[raw]), x.__class__
+     #print "PERSID->%d" % (pers_store[raw]), x.__class__
      #if str(x.__class__) == "<class 'pypy.objspace.flow.flowcontext.SpamBlock'>":
      #    import pdb; pdb.set_trace()
      return pers_store[raw]
