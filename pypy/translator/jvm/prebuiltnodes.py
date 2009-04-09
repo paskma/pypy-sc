@@ -67,8 +67,6 @@ import parlib.rthreading
 def thread_entry_point():
     #print "thread_entry_point"
     parlib.rthreading.boot.bootstrap()
-    #jthreading.blekota()
-    #jthreading.boot.jekota()
     return 0
 
 # ___________________________________________________________________________
