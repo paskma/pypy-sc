@@ -800,6 +800,8 @@ class JVMGenerator(Generator):
         self._instr(jvm.IFEQ, label)
         
 class JasminGenerator(JVMGenerator):
+    THREAD_STARTER = 'parlibutil/ThreadStarter'
+    THREAD_MARK = 'pypy/parlib/rthreading/Thread'
 
     def __init__(self, db, outdir):
         JVMGenerator.__init__(self, db)
@@ -817,6 +819,8 @@ class JasminGenerator(JVMGenerator):
 
         iclassnm = self.current_type().descriptor.int_class_name()
         isuper = self.curclass.superclass_type.descriptor.int_class_name()
+        if isuper.startswith(self.THREAD_MARK):
+            isuper = self.THREAD_STARTER
         
         jfile = self.outdir.join("%s.j" % iclassnm)
 
@@ -919,12 +923,14 @@ class JasminGenerator(JVMGenerator):
         def jasmin_syntax(arg):
             if hasattr(arg, 'jasmin_syntax'): return arg.jasmin_syntax()
             return str(arg)
-        def rewrite_wait_notify(strarg):
+        def rewrite(strarg):
             if strarg.endswith('/oWAIT()V'): return 'java/lang/Object/wait()V';
             if strarg.endswith('/oNOTIFY()V'): return 'java/lang/Object/notify()V';
             if strarg.endswith('/oNOTIFYALL()V'): return 'java/lang/Object/notifyAll()V';
+            if strarg.endswith('/oRUN()V'): return self.THREAD_STARTER + '/start()V';
+            if strarg.startswith(self.THREAD_MARK) and strarg.endswith('/<init>()V'): return self.THREAD_STARTER + '/<init>()V';
             return strarg
-        strargs = [rewrite_wait_notify(jasmin_syntax(arg)) for arg in args]
+        strargs = [rewrite(jasmin_syntax(arg)) for arg in args]
         instr_text = '%s %s' % (jvmstr, " ".join(strargs))
         self.curclass.out('    .line %d\n' % self.curclass.line_number)
         self.curclass.out('    %s\n' % (instr_text,))
