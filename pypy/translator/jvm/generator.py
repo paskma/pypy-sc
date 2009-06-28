@@ -862,7 +862,10 @@ class JasminGenerator(JVMGenerator):
                 mypycrash.saveToFile("/tmp/test_jvm_weakref.pycrash")
 
         kw = ['public']
-        if fobj.is_static: kw.append('static')
+        if fobj.is_static:
+            kw.append('static')
+            if fobj.field_name in ['pypy', 'ilink']:
+                kw.append('final') # pypy and ilink fields should be static
         self.curclass.out('.field %s %s %s\n' % (
             " ".join(kw), fobj.field_name, fobj.jtype.descriptor))
 
