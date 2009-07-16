@@ -927,10 +927,14 @@ class JasminGenerator(JVMGenerator):
             if hasattr(arg, 'jasmin_syntax'): return arg.jasmin_syntax()
             return str(arg)
         def rewrite(strarg):
+            PATTERN_ALLWAYS_FALSE = '/oALLWAYS_FALSE(II)Z'
+            PATTERN_FAKE_INC = '/oFAKE_INC(I)I'
             if strarg.endswith('/oWAIT()V'): return 'java/lang/Object/wait()V';
             if strarg.endswith('/oNOTIFY()V'): return 'java/lang/Object/notify()V';
             if strarg.endswith('/oNOTIFYALL()V'): return 'java/lang/Object/notifyAll()V';
             if strarg.endswith('/oRUN()V'): return self.THREAD_STARTER + '/start()V';
+            if strarg.endswith(PATTERN_ALLWAYS_FALSE): return strarg[0:-len(PATTERN_ALLWAYS_FALSE)] + '/oALLWAYS_FALSE_IMPL(II)Z'
+            if strarg.endswith(PATTERN_FAKE_INC): return strarg[0:-len(PATTERN_FAKE_INC)] + '/oFAKE_INC_IMPL(I)I'
             if strarg.startswith(self.THREAD_MARK) and strarg.endswith('/<init>()V'): return self.THREAD_STARTER + '/<init>()V';
             return strarg
         strargs = [rewrite(jasmin_syntax(arg)) for arg in args]
