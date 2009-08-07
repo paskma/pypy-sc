@@ -250,7 +250,7 @@ class GraphFunction(OOFunction, Function):
     """ Represents a function that is generated from a graph. """
     
     def __init__(self, db, classty, name, jargtypes,
-                 jrettype, graph, is_static):
+                 jrettype, graph, is_static, has_monitor):
         """
         classty: the JvmClassType object this is a part of (even static
         functions have a class)
@@ -260,7 +260,7 @@ class GraphFunction(OOFunction, Function):
         graph: the graph representing the body of the function
         is_static: boolean flag indicate whether func is static (!)
         """
-        OOFunction.__init__(self, db, graph, name, not is_static)
+        OOFunction.__init__(self, db, graph, name, not is_static, has_monitor=has_monitor)
         self.classty = classty
         self.jargtypes = jargtypes
         self.jrettype = jrettype
@@ -294,7 +294,7 @@ class GraphFunction(OOFunction, Function):
         jrettype = lltype_to_cts(self.graph.getreturnvar().concretetype)
 
         self.ilasm.begin_function(
-            self.name, jargvars, jargtypes, jrettype, static=not self.is_method)
+            self.name, jargvars, jargtypes, jrettype, static=not self.is_method, synchronized=self.has_monitor)
 
     def end_render(self):
         self.ilasm.end_function()

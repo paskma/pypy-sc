@@ -4,6 +4,29 @@ Command-line options for translate:
 
     See below
 """
+
+import __builtin__
+raw_id = id
+pers_store = {}
+pers_counter = 10000
+
+def pers_id(x):
+     """ assign ids according to call position, not memory position """
+     global pers_store, pers_counter
+     raw = raw_id(x)
+     if raw not in pers_store:
+         pers_counter += 1
+         pers_store[raw] = pers_counter
+         #print "PERSID NEW %d" % pers_counter
+
+     #print "PERSID->%d" % (pers_store[raw]), x.__class__
+     #if str(x.__class__) == "<class 'pypy.objspace.flow.flowcontext.SpamBlock'>":
+     #    import pdb; pdb.set_trace()
+     return pers_store[raw]
+
+__builtin__.id = pers_id
+
+
 import sys, os, new
 
 import autopath 

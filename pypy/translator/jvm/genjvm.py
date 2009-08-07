@@ -115,6 +115,10 @@ class JvmGeneratedSource(object):
         javafiles = srcdir.listdir('*.java')
         classfiles = srcdir.listdir('*.class')
         jnajar = rootdir.join('jna.jar')
+        
+        jpfdir = rootdir.join('gov').join('nasa').join('jpf').join('jvm')
+        javafiles += jpfdir.listdir('*.java')
+        classfiles += jpfdir.listdir('*.class')
 
         recompile = True
         if len(classfiles) == len(javafiles):
@@ -136,6 +140,11 @@ class JvmGeneratedSource(object):
         # copy .class files to classdir
         for classfile in srcdir.listdir('*.class'):
            classfile.copy(self.classdir.join('pypy'))
+        
+        jpfclassdir = self.classdir.join('gov').join('nasa').join('jpf').join('jvm')
+        self._invoke(['mkdir', '-p', str(jpfclassdir)], True)
+        for classfile in jpfdir.listdir('*.class'):
+           classfile.copy(jpfclassdir)
 
     def compile(self):
         """

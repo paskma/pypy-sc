@@ -68,6 +68,7 @@ class Hashable(object):
         if (r.startswith('<') and r.endswith('>') and
             hasattr(self.value, '__name__')):
             r = '%s %s' % (type(self.value).__name__, self.value.__name__)
-        elif len(r) > 60 or (len(r) > 30 and type(self.value) is not str):
-            r = r[:22] + '...' + r[-7:]
+        elif len(r) > 80 or (len(r) > 50 and type(self.value) is not str):
+            r = r[:42] + '...' + r[-7:]
+
         return r

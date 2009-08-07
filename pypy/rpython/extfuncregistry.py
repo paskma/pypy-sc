@@ -10,6 +10,7 @@ from pypy.rpython.lltypesystem.module import ll_math
 from pypy.rpython.ootypesystem.module import ll_math as oo_math
 from pypy.rpython.module import ll_os
 from pypy.rpython.module import ll_time
+from pypy.rpython.module import ll_foo
 try:
     import termios
 except ImportError:

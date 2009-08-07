@@ -53,6 +53,22 @@ def recordFloatSigned(a, b):
 def recordSignedSigned(a, b):
     return (a, b)
 
+@with_types([int])
+def fool(a):
+    for i in xrange(10):
+        print i
+        import time
+        time.sleep(0.2)
+    return a+111
+
+import parlib.rthreading
+
+@with_types([])
+def thread_entry_point():
+    #print "thread_entry_point"
+    parlib.rthreading.boot.bootstrap()
+    return 0
+
 # ___________________________________________________________________________
 
 def create_interlink_node(db):

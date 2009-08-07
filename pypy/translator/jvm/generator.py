@@ -190,7 +190,7 @@ class JVMGenerator(Generator):
                                    abstract=abstract)
     
     def begin_function(self, funcname, argvars, argtypes, rettype,
-                       static=False, abstract=False):
+                       static=False, abstract=False, synchronized=False):
         """
         funcname --- name of the function
         argvars --- list of objects passed to load() that represent arguments;
@@ -214,9 +214,9 @@ class JVMGenerator(Generator):
         # Prepare a map for the local variable indices we will add
         # Let the subclass do the rest of the work; note that it does
         # not need to know the argvars parameter, so don't pass it
-        self._begin_function(funcname, argtypes, rettype, static, abstract)
+        self._begin_function(funcname, argtypes, rettype, static, abstract, synchronized)
 
-    def _begin_function(self, funcname, argtypes, rettype, static, abstract):
+    def _begin_function(self, funcname, argtypes, rettype, static, abstract, synchronized):
         """
         Main implementation of begin_function.  The begin_function()
         does some generic handling of args.
@@ -800,6 +800,8 @@ class JVMGenerator(Generator):
         self._instr(jvm.IFEQ, label)
         
 class JasminGenerator(JVMGenerator):
+    THREAD_STARTER = 'parlibutil/ThreadStarter'
+    THREAD_MARK = 'pypy/parlib/rthreading/Thread'
 
     def __init__(self, db, outdir):
         JVMGenerator.__init__(self, db)
@@ -817,6 +819,8 @@ class JasminGenerator(JVMGenerator):
 
         iclassnm = self.current_type().descriptor.int_class_name()
         isuper = self.curclass.superclass_type.descriptor.int_class_name()
+        if isuper.startswith(self.THREAD_MARK):
+            isuper = self.THREAD_STARTER
         
         jfile = self.outdir.join("%s.j" % iclassnm)
 
@@ -858,11 +862,14 @@ class JasminGenerator(JVMGenerator):
                 mypycrash.saveToFile("/tmp/test_jvm_weakref.pycrash")
 
         kw = ['public']
-        if fobj.is_static: kw.append('static')
+        if fobj.is_static:
+            kw.append('static')
+            if fobj.field_name in ['pypy', 'ilink']:
+                kw.append('final') # pypy and ilink fields should be static
         self.curclass.out('.field %s %s %s\n' % (
             " ".join(kw), fobj.field_name, fobj.jtype.descriptor))
 
-    def _begin_function(self, funcname, argtypes, rettype, static, abstract):
+    def _begin_function(self, funcname, argtypes, rettype, static, abstract, synchronized):
 
         if not static: argtypes = argtypes[1:]
 
@@ -870,6 +877,7 @@ class JasminGenerator(JVMGenerator):
         kw = ['public']
         if static: kw.append('static')
         if abstract: kw.append('abstract')
+        if synchronized: kw.append('synchronized')
         self.curclass.out('.method %s %s(%s)%s\n' % (
             " ".join(kw),
             funcname,
@@ -918,7 +926,18 @@ class JasminGenerator(JVMGenerator):
         def jasmin_syntax(arg):
             if hasattr(arg, 'jasmin_syntax'): return arg.jasmin_syntax()
             return str(arg)
-        strargs = [jasmin_syntax(arg) for arg in args]
+        def rewrite(strarg):
+            PATTERN_ALLWAYS_FALSE = '/oALLWAYS_FALSE(II)Z'
+            PATTERN_FAKE_INC = '/oFAKE_INC(I)I'
+            if strarg.endswith('/oWAIT()V'): return 'java/lang/Object/wait()V';
+            if strarg.endswith('/oNOTIFY()V'): return 'java/lang/Object/notify()V';
+            if strarg.endswith('/oNOTIFYALL()V'): return 'java/lang/Object/notifyAll()V';
+            if strarg.endswith('/oRUN()V'): return self.THREAD_STARTER + '/start()V';
+            if strarg.endswith(PATTERN_ALLWAYS_FALSE): return strarg[0:-len(PATTERN_ALLWAYS_FALSE)] + '/oALLWAYS_FALSE_IMPL(II)Z'
+            if strarg.endswith(PATTERN_FAKE_INC): return strarg[0:-len(PATTERN_FAKE_INC)] + '/oFAKE_INC_IMPL(I)I'
+            if strarg.startswith(self.THREAD_MARK) and strarg.endswith('/<init>()V'): return self.THREAD_STARTER + '/<init>()V';
+            return strarg
+        strargs = [rewrite(jasmin_syntax(arg)) for arg in args]
         instr_text = '%s %s' % (jvmstr, " ".join(strargs))
         self.curclass.out('    .line %d\n' % self.curclass.line_number)
         self.curclass.out('    %s\n' % (instr_text,))

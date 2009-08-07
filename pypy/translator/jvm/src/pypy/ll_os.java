@@ -8,8 +8,8 @@ import java.util.Set;
 import java.util.Iterator;
 import java.util.Arrays;
 
-import com.sun.jna.Library;
-import com.sun.jna.Native;
+//import com.sun.jna.Library;
+//import com.sun.jna.Native;
 
 abstract class FileWrapper
 {
@@ -167,19 +167,23 @@ public class ll_os implements Constants {
      * JNA Interface: allows access to functions we don't normally
      * have in the Java standard lib
      */
-    static public interface Libc extends Library {
+    static public interface Libc /*extends Library*/ {
         public int getpid();
         public int symlink(String path1, String path2);
     }
     static final Libc libc;
     static {
+/*
         Libc res;
         try {
             res = (Libc) Native.loadLibrary("c", Libc.class);
         } catch (Throwable t) {
             res = null;
         }
+
         libc = res;
+*/
+        libc = null;
     }
 
     // NB: these values are those used by Windows and they differs
