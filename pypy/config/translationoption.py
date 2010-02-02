@@ -230,7 +230,11 @@ translation_optiondescription = OptionDescription(
                              ('translation.backendopt.inline_threshold', 0),
                              ('translation.backendopt.merge_if_blocks', False),
                              ('translation.backendopt.mallocs', False),
-                             ('translation.backendopt.constfold', False)])
+                             ('translation.backendopt.constfold', False)]),
+
+       BoolOption("simplify_disabled",
+                  "After rtyping, graph simplifications are disabled",
+                  default=False),
     ]),
 
     OptionDescription("llvm", "GenLLVM options", [

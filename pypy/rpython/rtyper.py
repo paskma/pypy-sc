@@ -39,6 +39,10 @@ class RPythonTyper(object):
     def __init__(self, annotator, type_system="lltype"):
         self.annotator = annotator
 
+        if self.getconfig().translation.backendopt.simplify_disabled:
+            for i in annotator.translator.graphs:
+                i._after_rtype = True
+
         self.lowlevel_ann_policy = LowLevelAnnotatorPolicy(self)
 
         if isinstance(type_system, str):

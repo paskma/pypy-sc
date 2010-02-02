@@ -13,6 +13,16 @@ from pypy.objspace.flow.model import checkgraph, traverse, mkentrymap
 from pypy.rpython.lltypesystem import lloperation, lltype
 from pypy.rpython.ootypesystem import ootype
 
+import traceback
+
+def simplify_disabled(graph):
+    try:
+        if graph._after_rtype:
+            print "disabled:", traceback.extract_stack()[-2], graph
+            return True
+    except AttributeError:
+        return False
+
 def get_funcobj(func):
     """
     Return an object which is supposed to have attributes such as graph and _callable
@@ -73,6 +83,7 @@ def eliminate_empty_blocks(graph):
     """Eliminate basic blocks that do not contain any operations.
     When this happens, we need to replace the preceeding link with the
     following link.  Arguments of the links should be updated."""
+    if simplify_disabled(graph): return
     def visit(link):
         if isinstance(link, Link):
             while not link.target.operations:
@@ -126,6 +137,7 @@ def transform_ovfcheck(graph):
     # this is the case if no exception handling was provided.
     # Otherwise, we have a block ending in the operation,
     # followed by a block with a single ovfcheck call.
+    if simplify_disabled(graph): return
     from pypy.rlib.rarithmetic import ovfcheck, ovfcheck_lshift
     from pypy.objspace.flow.objspace import op_appendices
     from pypy.objspace.flow.objspace import implicit_exceptions
@@ -226,6 +238,7 @@ def simplify_exceptions(graph):
     chain of is_/issubtype tests. We collapse them all into
     the block's single list of exits.
     """
+    if simplify_disabled(graph): return
     clastexc = c_last_exception
     renaming = {}
     def rename(v):
@@ -294,6 +307,7 @@ def simplify_exceptions(graph):
 
 def transform_xxxitem(graph):
     # xxx setitem too
+    if simplify_disabled(graph): return
     for block in graph.iterblocks():
         if block.operations and block.exitswitch == c_last_exception:
             last_op = block.operations[-1]
@@ -311,6 +325,7 @@ def transform_xxxitem(graph):
 def remove_dead_exceptions(graph):
     """Exceptions can be removed if they are unreachable"""
 
+    if simplify_disabled(graph): return
     clastexc = c_last_exception
 
     def issubclassofmember(cls, seq):
@@ -348,6 +363,7 @@ def join_blocks(graph):
     append all the operations of the following block to the preceeding
     block (but renaming variables with the appropriate arguments.)
     """
+    if simplify_disabled(graph): return
     entrymap = mkentrymap(graph)
     block = graph.startblock
     seen = {block: True}
@@ -397,6 +413,7 @@ def remove_assertion_errors(graph):
     this is how implicit exceptions are removed (see _implicit_ in
     flowcontext.py).
     """
+    if simplify_disabled(graph): return
     def visit(block):
         if isinstance(block, Block):
             for i in range(len(block.exits)-1, -1, -1):
@@ -633,6 +650,7 @@ def remove_identical_vars(graph):
     #    when for all possible incoming paths they would get twice the same
     #    value (this is really the purpose of remove_identical_vars()).
     #
+    if simplify_disabled(graph): return
     from pypy.translator.backendopt.ssa import DataFlowFamilyBuilder
     builder = DataFlowFamilyBuilder(graph)
     variable_families = builder.get_variable_families()  # vertical removal
@@ -672,6 +690,7 @@ def coalesce_is_true(graph):
        is_true both on the same value, transforming the link into the
        second is_true from the first to directly jump to the correct
        target out of the second."""
+    if simplify_disabled(graph): return
     candidates = []
 
     def has_is_true_exitpath(block):
@@ -730,6 +749,7 @@ def detect_list_comprehension(graph):
     # NB. this assumes RPythonicity: we can only iterate over something
     # that has a len(), and this len() cannot change as long as we are
     # using the iterator.
+    if simplify_disabled(graph): return
     from pypy.translator.backendopt.ssa import DataFlowFamilyBuilder
     builder = DataFlowFamilyBuilder(graph)
     variable_families = builder.get_variable_families()
