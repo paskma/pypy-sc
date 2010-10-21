@@ -482,15 +482,21 @@ class ContainerNode(object):
     def is_thread_local(self):
         return hasattr(self.T, "_hints") and self.T._hints.get('thread_local')
 
+    EXC_DATA_VARNAME = "pypy_g_ExcData" # hacked to be thread local
+
     def forward_declaration(self):
+        hard_tls = self.name == self.EXC_DATA_VARNAME
+
         yield '%s;' % (
             forward_cdecl(self.implementationtypename,
-                self.name, self.db.standalone, self.is_thread_local()))
+                self.name, self.db.standalone, hard_tls or self.is_thread_local()))
 
     def implementation(self):
+        hard_tls = self.name == self.EXC_DATA_VARNAME
+
         lines = list(self.initializationexpr())
         lines[0] = '%s = %s' % (
-            cdecl(self.implementationtypename, self.name, self.is_thread_local()),
+            cdecl(self.implementationtypename, self.name, hard_tls or self.is_thread_local()),
             lines[0])
         lines[-1] += ';'
         return lines
