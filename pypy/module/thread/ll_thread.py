@@ -27,6 +27,8 @@ eci = ExternalCompilationInfo(
                     python_inc],
     export_symbols = ['RPyThreadGetIdent', 'RPyThreadLockInit',
                       'RPyThreadAcquireLock', 'RPyThreadReleaseLock',
+                      'RPyThreadRLockInit',
+                      'RPyThreadAcquireRLock', 'RPyThreadReleaseRLock',
                       'RPyThreadYield']
 )
 
@@ -146,12 +148,8 @@ class RLock(object):
         return bool(res)
 
     def release(self):
-        # Sanity check: the lock must be locked
-        if self.acquire(False):
-            c_thread_releaserlock(self._rlock)
-            raise error("bad lock")
-        else:
-            c_thread_releaserlock(self._rlock)
+        # no sanity check, just unlock (see Lock)
+        c_thread_releaserlock(self._rlock)
 
     def __del__(self):
         lltype.free(self._rlock, flavor='raw')
