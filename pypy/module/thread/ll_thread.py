@@ -55,6 +55,8 @@ c_thread_get_ident = llexternal('RPyThreadGetIdent', [], rffi.INT,
 
 TLOCKP = rffi.COpaquePtr('struct RPyOpaque_ThreadLock',
                           compilation_info=eci)
+TRLOCKP = rffi.COpaquePtr('struct RPyOpaque_ThreadRLock',
+                          compilation_info=eci)
 
 c_thread_lock_init = llexternal('RPyThreadLockInit', [TLOCKP], lltype.Void)
 c_thread_acquirelock = llexternal('RPyThreadAcquireLock', [TLOCKP, rffi.INT],
@@ -62,6 +64,14 @@ c_thread_acquirelock = llexternal('RPyThreadAcquireLock', [TLOCKP, rffi.INT],
                                   threadsafe=True)    # release the GIL
 c_thread_releaselock = llexternal('RPyThreadReleaseLock', [TLOCKP], lltype.Void,
                                   threadsafe=True)    # release the GIL
+
+c_thread_rlock_init = llexternal('RPyThreadRLockInit', [TRLOCKP], lltype.Void)
+c_thread_acquirerlock = llexternal('RPyThreadAcquireRLock', [TRLOCKP, rffi.INT],
+                                  rffi.INT,
+                                  threadsafe=True)    # release the GIL
+c_thread_releaserlock = llexternal('RPyThreadReleaseRLock', [TRLOCKP], lltype.Void,
+                                  threadsafe=True)    # release the GIL
+
 
 # another set of functions, this time in versions that don't cause the
 # GIL to be released.  To use to handle the GIL lock itself.
@@ -77,6 +87,9 @@ yield_thread = llexternal('RPyThreadYield', [], lltype.Void, threadsafe=True)
 
 def allocate_lock():
     return Lock(allocate_ll_lock())
+
+def allocate_rlock():
+    return RLock(allocate_ll_rlock())
 
 def ll_start_new_thread(func):
     ident = c_thread_start(func)
@@ -120,6 +133,29 @@ class Lock(object):
     def __del__(self):
         lltype.free(self._lock, flavor='raw')
 
+class RLock(object):
+    """ Container for low-level implementation
+    of a rlock object
+    """
+    def __init__(self, ll_rlock):
+        self._rlock = ll_rlock
+
+    def acquire(self, flag):
+        res = c_thread_acquirerlock(self._rlock, int(flag))
+        res = rffi.cast(lltype.Signed, res)
+        return bool(res)
+
+    def release(self):
+        # Sanity check: the lock must be locked
+        if self.acquire(False):
+            c_thread_releaserlock(self._rlock)
+            raise error("bad lock")
+        else:
+            c_thread_releaserlock(self._rlock)
+
+    def __del__(self):
+        lltype.free(self._rlock, flavor='raw')
+
 # ____________________________________________________________
 #
 # GIL support wrappers
@@ -133,6 +169,14 @@ def allocate_ll_lock():
         lltype.free(ll_lock, flavor='raw')
         raise error("out of resources")
     return ll_lock
+
+def allocate_ll_rlock():
+    ll_rlock = lltype.malloc(TRLOCKP.TO, flavor='raw')
+    res = c_thread_rlock_init(ll_rlock)
+    if res == -1:
+        lltype.free(ll_rlock, flavor='raw')
+        raise error("out of resources")
+    return ll_rlock
 
 def acquire_NOAUTO(ll_lock, flag):
     flag = rffi.cast(rffi.INT, int(flag))
