@@ -213,7 +213,7 @@
 #define SIMPLELOCK_LOCK(lock)	/* acquire released lock */
 //#define SIMPLELOCK_LOCK(lock) fprintf(stderr, "LOCKING MALLOC LOCK %s:%d\n", __FILE__, __LINE__)
 #define SIMPLELOCK_UNLOCK(lock)	/* release acquired lock */
-#define SIMPLELOCK_UNLOCK(lock) fprintf(stderr, "UN-LOCKING MALLOC LOCK %s:%d\n", __FILE__, __LINE__)
+//#define SIMPLELOCK_UNLOCK(lock) fprintf(stderr, "UN-LOCKING MALLOC LOCK %s:%d\n", __FILE__, __LINE__)
 
 
 /*
