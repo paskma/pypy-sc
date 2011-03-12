@@ -4,5 +4,12 @@ package pypy;
 // exception.Exception class.  We use this rather than Throwable
 // because it makes it easy to catch RPython exceptions in our
 // automated tests (just catch any PyPyThrowable instance)
-public class PyPyThrowable extends Throwable
-{}
+public class PyPyThrowable extends Throwable{
+/*
+	public PyPyThrowable() {
+		System.out.println("PyPyThrowable created");
+		Exception e = new Exception();
+		e.printStackTrace();
+	}
+*/
+}
