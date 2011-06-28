@@ -3,7 +3,11 @@
  /***  C header subsection: stack operations               ***/
 
 #ifndef MAX_STACK_SIZE
-#    define MAX_STACK_SIZE (1 << 19)
+#    ifdef RPYTHON_MAX_STACK_SIZE
+#        define MAX_STACK_SIZE RPYTHON_MAX_STACK_SIZE
+#    else
+#        define MAX_STACK_SIZE (1 << 19)
+#    endif
 #endif
 
 /* This include must be done in any case to initialise
