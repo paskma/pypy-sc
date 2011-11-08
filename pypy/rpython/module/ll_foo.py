@@ -60,3 +60,47 @@ class RegisterFoo(BaseLazyRegistering):
     def register_foo_jpf_end_atomic(self):
         return extdef([], None, llimpl=None,
                       export_name='ll_foo.ll_foo_jpf_end_atomic')
+
+# C interface for inspiration                     
+#int simplenet_connect(const char * hostname, int port);
+#int simplenet_read(int slotnumber);
+#int simplenet_close(int slotnumber);
+#int simplenet_write_buf(int slotnumber, const char * buf, int size);
+#int simplenet_write_char(int slotnumber, int character);
+#int simplenet_flush(int slotnumber);
+#int simplenet_set_timeout(int slotnumber, int timeoutmillis);
+
+    @registering(foo.simplenet_connect)
+    def register_foo_simplenet_connect(self):
+        return extdef([str, int], int, llimpl=None,
+                      export_name='ll_foo.ll_foo_simplenet_connect')
+
+    @registering(foo.simplenet_read)
+    def register_foo_simplenet_read(self):
+        return extdef([int], int, llimpl=None,
+                      export_name='ll_foo.ll_foo_simplenet_read')
+
+    @registering(foo.simplenet_close)
+    def register_foo_simplenet_close(self):
+        return extdef([int], int, llimpl=None,
+                      export_name='ll_foo.ll_foo_simplenet_close')
+
+    @registering(foo.simplenet_write_buf)
+    def register_foo_simplenet_write_buf(self):
+        return extdef([int, str], int, llimpl=None,
+                      export_name='ll_foo.ll_foo_simplenet_write_buf')
+
+    @registering(foo.simplenet_write_char)
+    def register_foo_simplenet_write_char(self):
+        return extdef([int, int], int, llimpl=None,
+                      export_name='ll_foo.ll_foo_simplenet_write_char')
+
+    @registering(foo.simplenet_flush)
+    def register_foo_simplenet_flush(self):
+        return extdef([int], int, llimpl=None,
+                      export_name='ll_foo.ll_foo_simplenet_flush')
+
+    @registering(foo.simplenet_set_timeout)
+    def register_foo_simplenet_set_timeout(self):
+        return extdef([int, int], int, llimpl=None,
+                      export_name='ll_foo.ll_foo_simplenet_set_timeout')

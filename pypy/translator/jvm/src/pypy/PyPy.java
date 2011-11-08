@@ -1,11 +1,14 @@
 package pypy;
 
 import java.io.File;
+import java.io.IOException;
+import java.net.Socket;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.TreeMap;
 import java.text.DecimalFormat;
 import java.lang.reflect.Array;
 
@@ -1028,6 +1031,121 @@ public class PyPy implements Constants {
         locked = false;
         notify();
     }
+    
+    
+    
+    // section:simplenet
+    private TreeMap slots = null;
+    
+    private void simplenet_check_and_create() {
+    	if (slots == null)
+    		slots = new TreeMap();
+    }
+    
+    private Socket simplenet_get_socket(int slotnumber) {
+    	try {
+    		return (Socket)slots.get(slotnumber);
+    	} catch (java.util.NoSuchElementException ex) {
+    		return null;
+    	}
+	}
+    
+    
+	public int ll_foo_simplenet_connect(String hostname, int port) {
+		simplenet_check_and_create();
+		int newSlot = 1;
+		try {
+			newSlot = ((Integer)slots.lastKey()).intValue() + 1;
+		} catch (java.util.NoSuchElementException ex) {
+		}
+		
+		try {
+			Socket socket = new Socket(hostname, port);
+			slots.put(newSlot, socket);
+			return newSlot;
+		} catch (IOException ex) {
+			return -1;
+		}
+	}
+
+	public int ll_foo_simplenet_read(int slotnumber) {
+		simplenet_check_and_create();
+		try {
+			Socket socket = simplenet_get_socket(slotnumber);
+			if (socket == null)
+				return -2;
+			
+			return socket.getInputStream().read();
+		} catch (IOException e) {
+			return -3;
+		}
+	}
+	
+	public int ll_foo_simplenet_close(int slotnumber) {
+		simplenet_check_and_create();
+		try {
+			Socket socket = simplenet_get_socket(slotnumber);
+			if (socket == null)
+				return -2;
+			
+			socket.close();
+			slots.remove(slotnumber);
+			return 0;
+		} catch (IOException e) {
+			return -1;
+		}
+	}
+
+	public int ll_foo_simplenet_write_buf(int slotnumber, String buf) {
+		simplenet_check_and_create();
+		try {
+			Socket socket = simplenet_get_socket(slotnumber);
+			if (socket == null)
+				return -2;
+			
+			socket.getOutputStream().write(buf.getBytes());
+			socket.getOutputStream().flush();
+			System.out.println("sent: " + buf);
+			return buf.length();
+		} catch (IOException e) {
+			return -1;
+		}
+	}
+	
+	public int ll_foo_simplenet_write_char(int slotnumber, int character) {
+			return ll_foo_simplenet_write_buf(slotnumber, new String(new char[] {(char)character}));
+	}
+	
+	public int ll_foo_simplenet_flush(int slotnumber) {
+		simplenet_check_and_create();
+		try {
+			Socket socket = simplenet_get_socket(slotnumber);
+			if (socket == null)
+				return -2;
+			
+			socket.getOutputStream().flush();
+			return 0;
+		} catch (IOException e) {
+			return -1;
+		}
+	}
+
+	public int ll_foo_simplenet_set_timeout(int slotnumber, int timeoutmillis) {
+		simplenet_check_and_create();
+		try {
+			Socket socket = simplenet_get_socket(slotnumber);
+			if (socket == null)
+				return -2;
+			
+			socket.setSoTimeout(timeoutmillis);
+			return 0;
+		} catch (IOException e) {
+			return -1;
+		}
+	}
+    
+    
+    // endsection:simplenet
 
     
 
