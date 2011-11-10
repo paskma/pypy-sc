@@ -2,6 +2,9 @@ package pypy;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.BufferedReader;
 import java.net.Socket;
 import java.util.List;
 import java.util.ArrayList;
@@ -11,6 +14,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.text.DecimalFormat;
 import java.lang.reflect.Array;
+
 
 import gov.nasa.jpf.jvm.Verify;
 
@@ -1146,6 +1150,41 @@ public class PyPy implements Constants {
     
     
     // endsection:simplenet
+    // section:simplecon
+    private String simplecon_line = null;
+	private int simplecon_pos = 0;
+	private int simplecon_last_return = -1;
+
+	private void simplecon_prepare_line() {
+		InputStream ins  = System.in;
+		InputStreamReader r = new InputStreamReader(ins);
+		BufferedReader br = new BufferedReader(r);
+
+		try {
+			simplecon_line = br.readLine();
+		} catch (IOException e) {
+			simplecon_line = null;
+		}
+		simplecon_pos = 0;
+	}
+
+	public int ll_foo_simplecon_get_char() {
+		if (simplecon_last_return == -1) {
+			simplecon_prepare_line();
+		}
+
+		if (simplecon_line == null)
+			return -2;
+
+		if (simplecon_pos == simplecon_line.length()) {
+			simplecon_last_return = -1;
+			return simplecon_last_return;
+		}
+
+		simplecon_last_return = simplecon_line.charAt(simplecon_pos++);
+		return simplecon_last_return;
+	}
+    // endsection:simplecon
 
     
 

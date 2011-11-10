@@ -104,3 +104,10 @@ class RegisterFoo(BaseLazyRegistering):
     def register_foo_simplenet_set_timeout(self):
         return extdef([int, int], int, llimpl=None,
                       export_name='ll_foo.ll_foo_simplenet_set_timeout')
+
+    @registering(foo.simplecon_get_char)
+    def register_foo_simplecon_get_char(self):
+        return extdef([], int, llimpl=None,
+                      export_name='ll_foo.ll_foo_simplecon_get_char')
+
+
