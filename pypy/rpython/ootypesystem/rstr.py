@@ -196,7 +196,11 @@ class LLHelpers(AbstractLLHelpers):
         return buf.ll_build()
 
     def ll_stringslice_startonly(s, start):
-        return s.ll_substring(start, s.ll_strlen() - start)
+    	s_len = s.ll_strlen()
+    	# Disabled because of C's malloc(0) that might return NULL
+    	#if start > s_len:
+    	#	start = s_len
+        return s.ll_substring(start, s_len - start)
 
     def ll_stringslice(s, slice):
         start = slice.start

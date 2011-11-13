@@ -633,6 +633,8 @@ class LLHelpers(AbstractLLHelpers):
 
     def ll_stringslice_startonly(s1, start):
         len1 = len(s1.chars)
+        # start > len1 is not supported because C's malloc(0) might return NULL
+        # (not tried)
         newstr = s1.malloc(len1 - start)
         lgt = len1 - start
         assert lgt >= 0

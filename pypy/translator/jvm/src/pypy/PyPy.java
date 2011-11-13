@@ -749,7 +749,7 @@ public class PyPy implements Constants {
         int end = str.length();
 
         if (left) {
-            while (start <= str.length() && str.charAt(start) == ch) start++;
+            while (start < str.length() && str.charAt(start) == ch) start++;
         }
 
         if (right) {
