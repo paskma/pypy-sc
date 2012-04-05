@@ -1,0 +1,9 @@
+PyPy-StandaloneCompiler
+
+- Fork of PyPy, the Python in Python implementation
+- Research experiment.
+- Compiles general RPython programs to C or Java byte-code
+- Aimed at embedded devices.
+- Aimed at multithreaded programs.
+- Support for formal verification by Java Pathfinder
+- The compiled has to utilize a special library called parlib (TBD).
