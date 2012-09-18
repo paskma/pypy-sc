@@ -6,4 +6,5 @@ PyPy-StandaloneCompiler
 - Aimed at embedded devices.
 - Aimed at multithreaded programs.
 - Support for formal verification by Java Pathfinder
-- The compiled program has to utilize a special library called parlib (TBD).
+- The compiled program has to utilize a special library called parlib, see https://github.com/paskma/framework-parlib.
+- See the installation guide at http://www.kiv.zcu.cz/site/documents/verejne/vyzkum/publikace/technicke-zpravy/2012/tr-2012-09.pdf
